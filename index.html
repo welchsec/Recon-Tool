@@ -3,983 +3,445 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WelchSec Recon | Exposed Files & Directories</title>
+<title>WelchSec Recon Suite</title>
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg:      #080b0f;
-  --bg2:     #0d1117;
-  --panel:   #0d1117;
-  --border:  #1e2d3d;
-  --accent:  #00ff88;
-  --warn:    #ffbe0b;
-  --danger:  #ff4757;
-  --info:    #00b4d8;
-  --muted:   #3d5166;
-  --text:    #c9d1d9;
-  --heading: #f0f6fc;
+  --bg:#080b0f; --bg2:#0d1117; --panel:#0d1117;
+  --border:#1e2d3d; --accent:#00ff88; --warn:#ffbe0b;
+  --danger:#ff4757; --info:#00b4d8; --purple:#b39ddb;
+  --muted:#3d5166; --text:#c9d1d9; --heading:#f0f6fc;
 }
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-size:14px;min-height:100vh;}
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,255,136,0.008) 3px,rgba(0,255,136,0.008) 4px);pointer-events:none;z-index:999;}
 
-* { margin:0; padding:0; box-sizing:border-box; }
+/* Topbar */
+.topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:0.6rem 1.5rem;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100;}
+.brand{font-family:'Rajdhani',sans-serif;font-size:1.1rem;font-weight:700;color:var(--heading);letter-spacing:.05em;}
+.brand span{color:var(--accent);}
+.topbar-right{display:flex;align-items:center;gap:1rem;font-family:'Share Tech Mono',monospace;font-size:.6rem;color:var(--muted);letter-spacing:.1em;}
+.topbar-right a{color:var(--muted);text-decoration:none;transition:color .2s;}
+.topbar-right a:hover{color:var(--accent);}
+.status-led{width:7px;height:7px;border-radius:50%;background:var(--muted);transition:background .3s;}
+.status-led.scanning{background:var(--accent);box-shadow:0 0 8px var(--accent);animation:blink 1s infinite;}
+.status-led.done{background:var(--accent);box-shadow:0 0 8px var(--accent);}
+.status-led.error{background:var(--danger);box-shadow:0 0 8px var(--danger);}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: 'Inter', sans-serif;
-  font-size: 14px;
-  min-height: 100vh;
-}
+/* Module tabs (top level) */
+.module-bar{background:var(--bg2);border-bottom:2px solid var(--border);display:flex;padding:0 1.5rem;gap:0;}
+.mod-tab{font-family:'Rajdhani',sans-serif;font-weight:600;font-size:.85rem;letter-spacing:.08em;color:var(--muted);padding:.7rem 1.25rem;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .15s;text-transform:uppercase;}
+.mod-tab:hover{color:var(--text);}
+.mod-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.mod-tab .mod-icon{margin-right:.4rem;}
 
-/* Scanline overlay */
-body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,255,136,0.01) 3px, rgba(0,255,136,0.01) 4px);
-  pointer-events: none;
-  z-index: 999;
-}
+/* Module panels */
+.module{display:none;height:calc(100vh - 88px);}
+.module.active{display:grid;grid-template-columns:300px 1fr;}
+@media(max-width:800px){.module.active{grid-template-columns:1fr;}}
 
-/* ── Topbar ── */
-.topbar {
-  background: var(--bg2);
-  border-bottom: 1px solid var(--border);
-  padding: 0.6rem 1.5rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
+/* Sidebar */
+.sidebar{background:var(--bg2);border-right:1px solid var(--border);padding:1.25rem;display:flex;flex-direction:column;gap:.85rem;overflow-y:auto;}
+.panel{background:var(--bg);border:1px solid var(--border);padding:1rem;position:relative;}
+.panel-label{position:absolute;top:-.5rem;left:.75rem;font-family:'Share Tech Mono',monospace;font-size:.58rem;letter-spacing:.15em;background:var(--bg);padding:0 .4rem;color:var(--accent);}
+.field{margin-bottom:.65rem;}
+.field:last-child{margin-bottom:0;}
+.field label{display:block;font-family:'Share Tech Mono',monospace;font-size:.58rem;color:var(--muted);letter-spacing:.1em;margin-bottom:.3rem;}
+.field input,.field select{width:100%;background:var(--bg2);border:1px solid var(--border);color:var(--text);font-family:'Share Tech Mono',monospace;font-size:.75rem;padding:.5rem .6rem;outline:none;transition:border-color .2s;}
+.field input:focus,.field select:focus{border-color:var(--accent);}
+.field select option{background:var(--bg2);}
+.field-note{font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--muted);margin-top:.3rem;line-height:1.5;}
 
-.brand {
-  font-family: 'Rajdhani', sans-serif;
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: var(--heading);
-  letter-spacing: 0.05em;
-}
+/* Buttons */
+.scan-btn{width:100%;background:transparent;border:2px solid var(--accent);color:var(--accent);font-family:'Rajdhani',sans-serif;font-weight:700;font-size:1rem;letter-spacing:.1em;padding:.7rem;cursor:pointer;text-transform:uppercase;transition:all .2s;}
+.scan-btn:hover:not(:disabled){background:var(--accent);color:var(--bg);box-shadow:0 0 20px rgba(0,255,136,.3);}
+.scan-btn:disabled{opacity:.4;cursor:not-allowed;}
+.stop-btn{width:100%;background:transparent;border:1px solid var(--danger);color:var(--danger);font-family:'Share Tech Mono',monospace;font-size:.7rem;letter-spacing:.1em;padding:.45rem;cursor:pointer;text-transform:uppercase;transition:all .2s;display:none;}
+.stop-btn:hover{background:rgba(255,71,87,.1);}
+.stop-btn.visible{display:block;}
 
-.brand span { color: var(--accent); }
-
-.topbar-right {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 0.6rem;
-  color: var(--muted);
-  letter-spacing: 0.1em;
-}
-
-.status-led {
-  width: 7px; height: 7px;
-  border-radius: 50%;
-  background: var(--muted);
-  transition: background 0.3s;
-}
-.status-led.scanning { background: var(--accent); box-shadow: 0 0 8px var(--accent); animation: blink 1s infinite; }
-.status-led.done     { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
-.status-led.error    { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
-
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
-
-/* ── Layout ── */
-.layout {
-  display: grid;
-  grid-template-columns: 300px 1fr;
-  min-height: calc(100vh - 44px);
-}
-
-@media(max-width:800px) {
-  .layout { grid-template-columns: 1fr; }
-  .sidebar { border-right: none; border-bottom: 1px solid var(--border); }
-}
-
-/* ── Sidebar ── */
-.sidebar {
-  background: var(--bg2);
-  border-right: 1px solid var(--border);
-  padding: 1.25rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.panel {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  padding: 1rem;
-  position: relative;
-}
-
-.panel-label {
-  position: absolute;
-  top: -0.5rem;
-  left: 0.75rem;
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 0.58rem;
-  letter-spacing: 0.15em;
-  background: var(--bg);
-  padding: 0 0.4rem;
-  color: var(--accent);
-}
-
-.field { margin-bottom: 0.75rem; }
-.field:last-child { margin-bottom: 0; }
-
-.field label {
-  display: block;
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 0.58rem;
-  color: var(--muted);
-  letter-spacing: 0.1em;
-  margin-bottom: 0.3rem;
-}
-
-.field input, .field select {
-  width: 100%;
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  color: var(--text);
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 0.75rem;
-  padding: 0.5rem 0.6rem;
-  outline: none;
-  transition: border-color 0.2s;
-}
-
-.field input:focus, .field select:focus { border-color: var(--accent); }
-.field select option { background: var(--bg2); }
-
-/* Wordlist checkboxes */
-.wordlist-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.3rem;
-}
-
-.wl-item {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 0.62rem;
-  color: var(--text);
-  cursor: pointer;
-  padding: 0.3rem 0.4rem;
-  border: 1px solid transparent;
-  transition: all 0.15s;
-}
-
-.wl-item:hover { border-color: var(--border); }
-.wl-item.active { border-color: var(--accent); color: var(--accent); background: rgba(0,255,136,0.05); }
-
-.wl-item input { display: none; }
-
-/* Scan button */
-.scan-btn {
-  width: 100%;
-  background: transparent;
-  border: 2px solid var(--accent);
-  color: var(--accent);
-  font-family: 'Rajdhani', sans-serif;
-  font-weight: 700;
-  font-size: 1rem;
-  letter-spacing: 0.1em;
-  padding: 0.7rem;
-  cursor: pointer;
-  text-transform: uppercase;
-  transition: all 0.2s;
-  position: relative;
-  overflow: hidden;
-}
-
-.scan-btn:hover:not(:disabled) {
-  background: var(--accent);
-  color: var(--bg);
-  box-shadow: 0 0 20px rgba(0,255,136,0.3);
-}
-
-.scan-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
-.stop-btn {
-  width: 100%;
-  background: transparent;
-  border: 1px solid var(--danger);
-  color: var(--danger);
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 0.7rem;
-  letter-spacing: 0.1em;
-  padding: 0.45rem;
-  cursor: pointer;
-  text-transform: uppercase;
-  transition: all 0.2s;
-  display: none;
-}
-
-.stop-btn:hover { background: rgba(255,71,87,0.1); }
-.stop-btn.visible { display: block; }
+/* Wordlist toggles */
+.wl-grid{display:grid;grid-template-columns:1fr 1fr;gap:.3rem;}
+.wl-item{display:flex;align-items:center;gap:.4rem;font-family:'Share Tech Mono',monospace;font-size:.62rem;color:var(--text);cursor:pointer;padding:.3rem .4rem;border:1px solid transparent;transition:all .15s;}
+.wl-item:hover{border-color:var(--border);}
+.wl-item.active{border-color:var(--accent);color:var(--accent);background:rgba(0,255,136,.05);}
+.wl-item input{display:none;}
 
 /* Stats */
-.stats-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
-}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;}
+.stat-box{background:var(--bg2);border:1px solid var(--border);padding:.6rem;text-align:center;}
+.stat-num{font-family:'Rajdhani',sans-serif;font-size:1.5rem;font-weight:700;line-height:1;}
+.stat-label{font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--muted);letter-spacing:.1em;margin-top:.15rem;}
+.progress-wrap{background:var(--bg2);border:1px solid var(--border);height:4px;overflow:hidden;margin-top:.75rem;}
+.progress-bar{height:100%;background:var(--accent);width:0%;transition:width .3s;box-shadow:0 0 8px var(--accent);}
+.progress-label{font-family:'Share Tech Mono',monospace;font-size:.6rem;color:var(--muted);margin-top:.3rem;letter-spacing:.08em;}
 
-.stat-box {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  padding: 0.6rem;
-  text-align: center;
-}
-
-.stat-num {
-  font-family: 'Rajdhani', sans-serif;
-  font-size: 1.5rem;
-  font-weight: 700;
-  line-height: 1;
-}
-
-.stat-label {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 0.55rem;
-  color: var(--muted);
-  letter-spacing: 0.1em;
-  margin-top: 0.15rem;
-}
-
-/* Progress bar */
-.progress-wrap {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  height: 4px;
-  position: relative;
-  overflow: hidden;
-}
-
-.progress-bar {
-  height: 100%;
-  background: var(--accent);
-  width: 0%;
-  transition: width 0.3s;
-  box-shadow: 0 0 8px var(--accent);
-}
-
-.progress-label {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 0.6rem;
-  color: var(--muted);
-  margin-top: 0.3rem;
-  letter-spacing: 0.08em;
-}
-
-/* ── Main content ── */
-.main {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-/* Tabs */
-.tabs {
-  background: var(--bg2);
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  padding: 0 1.5rem;
-  gap: 0;
-}
-
-.tab {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 0.65rem;
-  letter-spacing: 0.1em;
-  color: var(--muted);
-  padding: 0.75rem 1rem;
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-  transition: all 0.15s;
-  white-space: nowrap;
-}
-
-.tab:hover { color: var(--text); }
-.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-.tab .badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--border);
-  color: var(--text);
-  font-size: 0.55rem;
-  min-width: 16px;
-  height: 16px;
-  border-radius: 2px;
-  padding: 0 3px;
-  margin-left: 0.4rem;
-}
-.tab.active .badge { background: var(--accent); color: var(--bg); }
-
-/* Results area */
-.results-area {
-  flex: 1;
-  overflow-y: auto;
-  padding: 1rem 1.5rem;
-}
+/* Main content */
+.main{display:flex;flex-direction:column;overflow:hidden;}
+.tabs{background:var(--bg2);border-bottom:1px solid var(--border);display:flex;padding:0 1.5rem;gap:0;}
+.tab{font-family:'Share Tech Mono',monospace;font-size:.65rem;letter-spacing:.1em;color:var(--muted);padding:.7rem 1rem;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;}
+.tab:hover{color:var(--text);}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.tab .badge{display:inline-flex;align-items:center;justify-content:center;background:var(--border);color:var(--text);font-size:.55rem;min-width:16px;height:16px;border-radius:2px;padding:0 3px;margin-left:.4rem;}
+.tab.active .badge{background:var(--accent);color:var(--bg);}
+.results-area{flex:1;overflow-y:auto;padding:1rem 1.5rem;}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
 
 /* Filter bar */
-.filter-bar {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-  flex-wrap: wrap;
-  align-items: center;
-}
+.filter-bar{display:flex;gap:.5rem;margin-bottom:1rem;flex-wrap:wrap;align-items:center;}
+.filter-input{background:var(--bg2);border:1px solid var(--border);color:var(--text);font-family:'Share Tech Mono',monospace;font-size:.7rem;padding:.4rem .6rem;outline:none;flex:1;min-width:150px;}
+.filter-input:focus{border-color:var(--accent);}
+.filter-btn{font-family:'Share Tech Mono',monospace;font-size:.6rem;letter-spacing:.08em;padding:.4rem .65rem;border:1px solid var(--border);color:var(--muted);cursor:pointer;background:transparent;transition:all .15s;white-space:nowrap;}
+.filter-btn:hover,.filter-btn.on{border-color:var(--accent);color:var(--accent);background:rgba(0,255,136,.05);}
 
-.filter-input {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  color: var(--text);
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 0.7rem;
-  padding: 0.4rem 0.6rem;
-  outline: none;
-  flex: 1;
-  min-width: 150px;
-}
+/* Result rows - shared */
+.result-row{display:grid;gap:.5rem;align-items:center;padding:.5rem .75rem;border:1px solid transparent;border-left:3px solid transparent;margin-bottom:2px;font-family:'Share Tech Mono',monospace;font-size:.7rem;transition:all .1s;animation:fadeIn .2s ease forwards;}
+@keyframes fadeIn{from{opacity:0;transform:translateX(-4px)}to{opacity:1;transform:translateX(0)}}
+.result-row:hover{background:rgba(255,255,255,.02);border-color:var(--border);}
+.result-row.sev-critical{border-left-color:var(--danger);}
+.result-row.sev-high{border-left-color:var(--warn);}
+.result-row.sev-medium{border-left-color:var(--info);}
+.result-row.sev-low{border-left-color:var(--accent);}
+.result-row.sev-info{border-left-color:var(--muted);}
 
-.filter-input:focus { border-color: var(--accent); }
+/* Dir scan rows */
+.dir-row{grid-template-columns:60px 1fr auto auto;}
+.status-code{font-weight:700;font-size:.75rem;text-align:center;}
+.sc-200{color:var(--accent);} .sc-301,.sc-302{color:var(--info);} .sc-403{color:var(--warn);} .sc-401{color:var(--purple);} .sc-500{color:var(--danger);}
 
-.filter-btn {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 0.6rem;
-  letter-spacing: 0.08em;
-  padding: 0.4rem 0.65rem;
-  border: 1px solid var(--border);
-  color: var(--muted);
-  cursor: pointer;
-  background: transparent;
-  transition: all 0.15s;
-  white-space: nowrap;
-}
+/* Subdomain rows */
+.sub-row{grid-template-columns:1fr auto auto auto;}
+.sub-name{color:var(--text);word-break:break-all;line-height:1.4;}
+.sub-name a{color:inherit;text-decoration:none;}
+.sub-name a:hover{color:var(--accent);text-decoration:underline;}
+.sub-ip{color:var(--muted);font-size:.62rem;white-space:nowrap;}
+.sub-src{font-size:.58rem;padding:.1rem .35rem;border:1px solid var(--border);color:var(--muted);white-space:nowrap;}
 
-.filter-btn:hover, .filter-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(0,255,136,0.05); }
+/* Header rows */
+.hdr-row{grid-template-columns:200px 1fr auto;}
+.hdr-name{color:var(--info);white-space:nowrap;}
+.hdr-value{color:var(--text);word-break:break-all;line-height:1.4;}
 
-/* Result row */
-.result-row {
-  display: grid;
-  grid-template-columns: 60px 1fr auto auto;
-  gap: 0.5rem;
-  align-items: center;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid transparent;
-  border-left: 3px solid transparent;
-  margin-bottom: 2px;
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 0.7rem;
-  transition: all 0.1s;
-  cursor: default;
-  animation: fadeIn 0.2s ease forwards;
-}
-
-@keyframes fadeIn { from{opacity:0;transform:translateX(-4px)} to{opacity:1;transform:translateX(0)} }
-
-.result-row:hover { background: rgba(255,255,255,0.02); border-color: var(--border); }
-
-.result-row.s200 { border-left-color: var(--accent); }
-.result-row.s301, .result-row.s302 { border-left-color: var(--info); }
-.result-row.s403 { border-left-color: var(--warn); }
-.result-row.s500 { border-left-color: var(--danger); }
-.result-row.s401 { border-left-color: #b39ddb; }
-
-.status-code {
-  font-weight: 700;
-  font-size: 0.75rem;
-  text-align: center;
-}
-
-.s200 .status-code { color: var(--accent); }
-.s301 .status-code, .s302 .status-code { color: var(--info); }
-.s403 .status-code { color: var(--warn); }
-.s500 .status-code { color: var(--danger); }
-.s401 .status-code { color: #b39ddb; }
-
-.result-path {
-  color: var(--text);
-  word-break: break-all;
-  line-height: 1.4;
-}
-
-.result-path a {
-  color: inherit;
-  text-decoration: none;
-}
-
-.result-path a:hover { color: var(--accent); text-decoration: underline; }
-
-.result-size {
-  color: var(--muted);
-  font-size: 0.62rem;
-  white-space: nowrap;
-  text-align: right;
-}
-
-.result-type {
-  font-size: 0.58rem;
-  padding: 0.1rem 0.35rem;
-  border: 1px solid;
-  white-space: nowrap;
-}
-
-.type-critical { color: var(--danger); border-color: rgba(255,71,87,0.4); background: rgba(255,71,87,0.08); }
-.type-high     { color: var(--warn);   border-color: rgba(255,190,11,0.4); background: rgba(255,190,11,0.08); }
-.type-medium   { color: var(--info);   border-color: rgba(0,180,216,0.4);  background: rgba(0,180,216,0.08); }
-.type-low      { color: var(--muted);  border-color: var(--border); }
-.type-info     { color: var(--accent); border-color: rgba(0,255,136,0.3);  background: rgba(0,255,136,0.05); }
-
-/* Severity badge rules */
-.sev-critical { color: var(--danger); }
-.sev-high     { color: var(--warn); }
-.sev-medium   { color: var(--info); }
-.sev-low      { color: var(--muted); }
-
-/* Empty / placeholder */
-.placeholder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 300px;
-  gap: 0.75rem;
-}
-
-.placeholder-icon { font-size: 2.5rem; opacity: 0.15; }
-
-.placeholder-text {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 0.7rem;
-  color: var(--muted);
-  letter-spacing: 0.1em;
-  text-align: center;
-  line-height: 1.8;
-}
-
-/* Log stream */
-.log-stream {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  padding: 0.75rem;
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 0.65rem;
-  color: var(--muted);
-  height: 300px;
-  overflow-y: auto;
-  line-height: 1.7;
-}
-
-.log-line { display: block; }
-.log-line.ok    { color: var(--accent); }
-.log-line.warn  { color: var(--warn); }
-.log-line.err   { color: var(--danger); }
-.log-line.info  { color: var(--info); }
-
-/* Tab panels */
-.tab-panel { display: none; }
-.tab-panel.active { display: block; }
+/* Severity badges */
+.sev-badge{font-size:.58rem;padding:.1rem .35rem;border:1px solid;white-space:nowrap;}
+.sev-badge.critical{color:var(--danger);border-color:rgba(255,71,87,.4);background:rgba(255,71,87,.08);}
+.sev-badge.high{color:var(--warn);border-color:rgba(255,190,11,.4);background:rgba(255,190,11,.08);}
+.sev-badge.medium{color:var(--info);border-color:rgba(0,180,216,.4);background:rgba(0,180,216,.08);}
+.sev-badge.low{color:var(--accent);border-color:rgba(0,255,136,.3);background:rgba(0,255,136,.05);}
+.sev-badge.info{color:var(--muted);border-color:var(--border);}
+.sev-badge.pass{color:var(--accent);border-color:rgba(0,255,136,.3);}
+.sev-badge.missing{color:var(--danger);border-color:rgba(255,71,87,.3);}
 
 /* Summary cards */
-.summary-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 0.75rem;
-  margin-bottom: 1.25rem;
-}
+.summary-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:.75rem;margin-bottom:1.25rem;}
+.summary-card{background:var(--bg2);border:1px solid var(--border);padding:.85rem 1rem;display:flex;align-items:center;gap:.75rem;}
+.sum-num{font-family:'Rajdhani',sans-serif;font-size:1.6rem;font-weight:700;line-height:1;}
+.sum-lbl{font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--muted);letter-spacing:.1em;}
 
-.summary-card {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  padding: 0.85rem 1rem;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
+/* Col headers */
+.col-header{display:grid;gap:.5rem;padding:.3rem .75rem;font-family:'Share Tech Mono',monospace;font-size:.58rem;color:var(--muted);letter-spacing:.1em;border-bottom:1px solid var(--border);margin-bottom:.5rem;}
+.col-dir{grid-template-columns:60px 1fr auto auto;}
+.col-sub{grid-template-columns:1fr auto auto auto;}
+.col-hdr{grid-template-columns:200px 1fr auto;}
 
-.summary-icon { font-size: 1.25rem; }
-.summary-num {
-  font-family: 'Rajdhani', sans-serif;
-  font-size: 1.6rem;
-  font-weight: 700;
-  line-height: 1;
-}
-.summary-lbl {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 0.55rem;
-  color: var(--muted);
-  letter-spacing: 0.1em;
-}
+/* Log */
+.log-stream{background:var(--bg);border:1px solid var(--border);padding:.75rem;font-family:'Share Tech Mono',monospace;font-size:.65rem;color:var(--muted);height:calc(100vh - 200px);overflow-y:auto;line-height:1.7;}
+.log-line{display:block;}
+.log-line.ok{color:var(--accent);} .log-line.warn{color:var(--warn);} .log-line.err{color:var(--danger);} .log-line.info{color:var(--info);}
 
-/* Column headers */
-.col-header {
-  display: grid;
-  grid-template-columns: 60px 1fr auto auto;
-  gap: 0.5rem;
-  padding: 0.3rem 0.75rem;
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 0.58rem;
-  color: var(--muted);
-  letter-spacing: 0.1em;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 0.5rem;
-}
+/* Placeholder */
+.placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;height:250px;gap:.75rem;}
+.placeholder-icon{font-size:2.5rem;opacity:.15;}
+.placeholder-text{font-family:'Share Tech Mono',monospace;font-size:.7rem;color:var(--muted);letter-spacing:.1em;text-align:center;line-height:1.8;}
 
 /* Disclaimer */
-.disclaimer {
-  background: rgba(255,71,87,0.06);
-  border: 1px solid rgba(255,71,87,0.25);
-  padding: 0.75rem 1rem;
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 0.62rem;
-  color: var(--warn);
-  line-height: 1.6;
-  letter-spacing: 0.04em;
-  margin-bottom: 1rem;
-}
+.disclaimer{background:rgba(255,71,87,.06);border:1px solid rgba(255,71,87,.25);padding:.75rem 1rem;font-family:'Share Tech Mono',monospace;font-size:.62rem;color:var(--warn);line-height:1.6;letter-spacing:.04em;margin-bottom:1rem;}
 
-/* Scrollbar */
-::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: var(--border); }
+/* Header analysis cards */
+.hdr-section{margin-bottom:1.5rem;}
+.hdr-section-title{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.9rem;color:var(--heading);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.75rem;padding-bottom:.4rem;border-bottom:1px solid var(--border);}
+.hdr-card{background:var(--bg2);border:1px solid var(--border);border-left:3px solid var(--border);padding:1rem;margin-bottom:.6rem;}
+.hdr-card.critical{border-left-color:var(--danger);}
+.hdr-card.high{border-left-color:var(--warn);}
+.hdr-card.medium{border-left-color:var(--info);}
+.hdr-card.pass{border-left-color:var(--accent);}
+.hdr-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;margin-bottom:.5rem;}
+.hdr-card-name{font-family:'Share Tech Mono',monospace;font-size:.75rem;color:var(--heading);font-weight:700;}
+.hdr-card-value{font-family:'Share Tech Mono',monospace;font-size:.68rem;color:var(--muted);word-break:break-all;line-height:1.5;margin-bottom:.4rem;}
+.hdr-card-desc{font-size:.78rem;color:var(--text);line-height:1.6;}
+.hdr-card-rec{font-size:.72rem;color:var(--warn);margin-top:.4rem;line-height:1.5;}
+
+/* Source tags */
+.src-crt{color:var(--accent);} .src-ht{color:var(--info);} .src-brute{color:var(--purple);} .src-st{color:var(--warn);}
+
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border);}
 </style>
 </head>
 <body>
 
 <div class="topbar">
-  <div class="brand">Welch<span>Sec</span> // Recon</div>
+  <div class="brand">Welch<span>Sec</span> // Recon Suite</div>
   <div class="topbar-right">
     <div class="status-led" id="statusLed"></div>
     <span id="statusText">IDLE</span>
     <span style="color:var(--border)">|</span>
-    <a href="https://welchsec.github.io/TTP-Threat-Report/" target="_blank" style="color:var(--muted);text-decoration:none;">TTP REPORT ↗</a>
-    <a href="https://welchsec.github.io/Intrusion-Report/" target="_blank" style="color:var(--muted);text-decoration:none;">INTRUSION ↗</a>
+    <a href="https://welchsec.github.io/TTP-Threat-Report/" target="_blank">TTP ↗</a>
+    <a href="https://welchsec.github.io/Intrusion-Report/" target="_blank">INTRUSION ↗</a>
   </div>
 </div>
 
-<div class="layout">
+<!-- Module tabs -->
+<div class="module-bar">
+  <div class="mod-tab active" onclick="switchModule('dir')" id="modtab-dir"><span class="mod-icon">🔍</span>DIR SCAN</div>
+  <div class="mod-tab" onclick="switchModule('sub')" id="modtab-sub"><span class="mod-icon">🌐</span>SUBDOMAINS</div>
+  <div class="mod-tab" onclick="switchModule('hdr')" id="modtab-hdr"><span class="mod-icon">🛡</span>HEADER ANALYZER</div>
+</div>
 
-  <!-- ── Sidebar ── -->
+<!-- ══════════════════════════════════════════════════════════
+     MODULE 1 — DIRECTORY SCAN
+     ══════════════════════════════════════════════════════════ -->
+<div class="module active" id="mod-dir">
   <aside class="sidebar">
-
-    <!-- Target -->
     <div class="panel">
       <div class="panel-label">TARGET</div>
-      <div class="field">
-        <label>DOMAIN / URL</label>
-        <input type="text" id="target" placeholder="https://example.com" />
-      </div>
-      <div class="field">
-        <label>WORKER PROXY URL</label>
-        <input type="text" id="workerUrl" placeholder="https://your-worker.workers.dev" />
-        <div style="font-family:'Share Tech Mono',monospace;font-size:0.55rem;color:var(--muted);margin-top:0.3rem;">
-          Required — deploy cloudflare-worker.js from WelchSec repo
-        </div>
-      </div>
+      <div class="field"><label>DOMAIN / URL</label><input type="text" id="dir-target" placeholder="https://example.com"></div>
+      <div class="field"><label>CLOUDFLARE WORKER URL</label><input type="text" id="dir-worker" placeholder="https://your-worker.workers.dev"><div class="field-note">Same worker used for all modules</div></div>
     </div>
-
-    <!-- Scan config -->
     <div class="panel">
       <div class="panel-label">SCAN CONFIG</div>
-      <div class="field">
-        <label>CONCURRENCY (simultaneous requests)</label>
-        <select id="concurrency">
-          <option value="3">3 — Stealth</option>
-          <option value="5" selected>5 — Balanced</option>
-          <option value="10">10 — Aggressive</option>
-          <option value="20">20 — Max Speed</option>
-        </select>
+      <div class="field"><label>CONCURRENCY</label>
+        <select id="dir-concurrency"><option value="3">3 — Stealth</option><option value="5" selected>5 — Balanced</option><option value="10">10 — Aggressive</option><option value="20">20 — Max Speed</option></select>
       </div>
-      <div class="field">
-        <label>REQUEST DELAY (ms between batches)</label>
-        <select id="delay">
-          <option value="0">0ms — No delay</option>
-          <option value="200" selected>200ms — Recommended</option>
-          <option value="500">500ms — Polite</option>
-          <option value="1000">1000ms — Very Polite</option>
-        </select>
+      <div class="field"><label>DELAY (ms)</label>
+        <select id="dir-delay"><option value="0">0ms — None</option><option value="200" selected>200ms — Recommended</option><option value="500">500ms — Polite</option><option value="1000">1s — Very Polite</option></select>
       </div>
-      <div class="field">
-        <label>STATUS CODES TO FLAG</label>
-        <select id="statusFilter">
-          <option value="all">All (200, 301, 302, 401, 403, 500)</option>
-          <option value="interesting" selected>Interesting (200, 301, 401, 403, 500)</option>
-          <option value="200only">200 Only (Confirmed found)</option>
-        </select>
+      <div class="field"><label>SHOW RESULTS</label>
+        <select id="dir-statusFilter"><option value="interesting" selected>Interesting (200,301,401,403,500)</option><option value="all">All (except 404)</option><option value="200only">200 Only</option></select>
       </div>
     </div>
-
-    <!-- Wordlists -->
     <div class="panel">
       <div class="panel-label">WORDLISTS</div>
-      <div class="wordlist-grid" id="wordlistGrid">
-        <label class="wl-item active" title="Common admin panels and login pages">
-          <input type="checkbox" value="admin" checked> ADMIN
-        </label>
-        <label class="wl-item active" title="Backup files, .bak, .old, .zip">
-          <input type="checkbox" value="backups" checked> BACKUPS
-        </label>
-        <label class="wl-item active" title="Config files, .env, .config, web.config">
-          <input type="checkbox" value="config" checked> CONFIG
-        </label>
-        <label class="wl-item active" title="API endpoints and documentation">
-          <input type="checkbox" value="api" checked> API
-        </label>
-        <label class="wl-item" title="Git, SVN, and other VCS exposure">
-          <input type="checkbox" value="vcs"> VCS
-        </label>
-        <label class="wl-item" title="Log files and debug outputs">
-          <input type="checkbox" value="logs"> LOGS
-        </label>
-        <label class="wl-item" title="Database files and exports">
-          <input type="checkbox" value="database"> DATABASE
-        </label>
-        <label class="wl-item" title="Upload directories and file managers">
-          <input type="checkbox" value="uploads"> UPLOADS
-        </label>
-        <label class="wl-item" title="WordPress-specific paths">
-          <input type="checkbox" value="wordpress"> WORDPRESS
-        </label>
-        <label class="wl-item" title="PHP info, test pages, debug endpoints">
-          <input type="checkbox" value="debug"> DEBUG
-        </label>
-        <label class="wl-item" title="Cloud metadata endpoints (AWS, GCP, Azure)">
-          <input type="checkbox" value="cloud"> CLOUD META
-        </label>
-        <label class="wl-item" title="Common CVE-related paths">
-          <input type="checkbox" value="cve"> CVE PATHS
-        </label>
+      <div class="wl-grid" id="dir-wlGrid">
+        <label class="wl-item active"><input type="checkbox" value="admin" checked>ADMIN</label>
+        <label class="wl-item active"><input type="checkbox" value="backups" checked>BACKUPS</label>
+        <label class="wl-item active"><input type="checkbox" value="config" checked>CONFIG</label>
+        <label class="wl-item active"><input type="checkbox" value="api" checked>API</label>
+        <label class="wl-item"><input type="checkbox" value="vcs">VCS</label>
+        <label class="wl-item"><input type="checkbox" value="logs">LOGS</label>
+        <label class="wl-item"><input type="checkbox" value="database">DATABASE</label>
+        <label class="wl-item"><input type="checkbox" value="uploads">UPLOADS</label>
+        <label class="wl-item"><input type="checkbox" value="wordpress">WORDPRESS</label>
+        <label class="wl-item"><input type="checkbox" value="debug">DEBUG</label>
+        <label class="wl-item"><input type="checkbox" value="cloud">CLOUD META</label>
+        <label class="wl-item"><input type="checkbox" value="cve">CVE PATHS</label>
       </div>
     </div>
-
-    <!-- Actions -->
-    <button class="scan-btn" id="scanBtn" onclick="startScan()">▶ START SCAN</button>
-    <button class="stop-btn" id="stopBtn" onclick="stopScan()">■ STOP SCAN</button>
-
-    <!-- Stats -->
+    <button class="scan-btn" id="dir-scanBtn" onclick="startDirScan()">▶ START SCAN</button>
+    <button class="stop-btn" id="dir-stopBtn" onclick="dirStop=true">■ STOP</button>
     <div class="panel">
-      <div class="panel-label">LIVE STATS</div>
+      <div class="panel-label">STATS</div>
       <div class="stats-grid">
-        <div class="stat-box">
-          <div class="stat-num" id="statChecked" style="color:var(--info)">0</div>
-          <div class="stat-label">CHECKED</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-num" id="statFound" style="color:var(--accent)">0</div>
-          <div class="stat-label">FOUND</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-num" id="statCritical" style="color:var(--danger)">0</div>
-          <div class="stat-label">CRITICAL</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-num" id="statErrors" style="color:var(--muted)">0</div>
-          <div class="stat-label">ERRORS</div>
-        </div>
+        <div class="stat-box"><div class="stat-num" id="dir-checked" style="color:var(--info)">0</div><div class="stat-label">CHECKED</div></div>
+        <div class="stat-box"><div class="stat-num" id="dir-found" style="color:var(--accent)">0</div><div class="stat-label">FOUND</div></div>
+        <div class="stat-box"><div class="stat-num" id="dir-critical" style="color:var(--danger)">0</div><div class="stat-label">CRITICAL</div></div>
+        <div class="stat-box"><div class="stat-num" id="dir-errors" style="color:var(--muted)">0</div><div class="stat-label">ERRORS</div></div>
       </div>
-      <div style="margin-top:0.75rem;">
-        <div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
-        <div class="progress-label" id="progressLabel">0 / 0 paths</div>
-      </div>
+      <div class="progress-wrap"><div class="progress-bar" id="dir-progress"></div></div>
+      <div class="progress-label" id="dir-progressLabel">0 / 0</div>
     </div>
-
   </aside>
-
-  <!-- ── Main ── -->
   <div class="main">
-
     <div class="tabs">
-      <div class="tab active" onclick="switchTab('findings')" id="tab-findings">
-        FINDINGS <span class="badge" id="badge-findings">0</span>
+      <div class="tab active" onclick="dirTab('findings')" id="dir-tab-findings">FINDINGS <span class="badge" id="dir-badge-findings">0</span></div>
+      <div class="tab" onclick="dirTab('critical')" id="dir-tab-critical">CRITICAL <span class="badge" id="dir-badge-critical">0</span></div>
+      <div class="tab" onclick="dirTab('all')" id="dir-tab-all">ALL <span class="badge" id="dir-badge-all">0</span></div>
+      <div class="tab" onclick="dirTab('log')" id="dir-tab-log">LOG</div>
+    </div>
+    <div class="results-area">
+      <div class="disclaimer">⚠ Only scan targets you own or have explicit written permission to test. Unauthorized scanning may violate computer fraud laws.</div>
+      <div class="tab-panel active" id="dir-panel-findings">
+        <div class="summary-row" id="dir-summaryRow" style="display:none">
+          <div class="summary-card"><div>💀</div><div><div class="sum-num" style="color:var(--danger)" id="dir-sum-critical">0</div><div class="sum-lbl">CRITICAL</div></div></div>
+          <div class="summary-card"><div>🟠</div><div><div class="sum-num" style="color:var(--warn)" id="dir-sum-high">0</div><div class="sum-lbl">HIGH</div></div></div>
+          <div class="summary-card"><div>🟡</div><div><div class="sum-num" style="color:var(--info)" id="dir-sum-medium">0</div><div class="sum-lbl">MEDIUM</div></div></div>
+          <div class="summary-card"><div>✅</div><div><div class="sum-num" style="color:var(--accent)" id="dir-sum-total">0</div><div class="sum-lbl">TOTAL</div></div></div>
+        </div>
+        <div class="filter-bar" id="dir-filterBar" style="display:none">
+          <input class="filter-input" placeholder="Filter paths..." oninput="dirApplyFilter(this.value)">
+          <button class="filter-btn on" onclick="dirStatusFilter('all',this)">ALL</button>
+          <button class="filter-btn" onclick="dirStatusFilter('200',this)">200</button>
+          <button class="filter-btn" onclick="dirStatusFilter('403',this)">403</button>
+          <button class="filter-btn" onclick="dirStatusFilter('401',this)">401</button>
+          <button class="filter-btn" onclick="dirStatusFilter('500',this)">500</button>
+          <button class="filter-btn" onclick="dirExportCSV()" style="margin-left:auto">⬇ CSV</button>
+        </div>
+        <div class="col-header col-dir" id="dir-colHeader" style="display:none"><span>STATUS</span><span>PATH</span><span>SIZE</span><span>SEVERITY</span></div>
+        <div id="dir-findings"><div class="placeholder"><div class="placeholder-icon">🔍</div><div class="placeholder-text">ENTER TARGET AND SELECT WORDLISTS<br>THEN CLICK START SCAN</div></div></div>
       </div>
-      <div class="tab" onclick="switchTab('critical')" id="tab-critical">
-        CRITICAL <span class="badge" id="badge-critical">0</span>
+      <div class="tab-panel" id="dir-panel-critical"><div id="dir-critical-container"><div class="placeholder"><div class="placeholder-icon">🚨</div><div class="placeholder-text">CRITICAL FINDINGS WILL APPEAR HERE</div></div></div></div>
+      <div class="tab-panel" id="dir-panel-all">
+        <div class="col-header col-dir"><span>STATUS</span><span>PATH</span><span>SIZE</span><span>SEVERITY</span></div>
+        <div id="dir-all-container"></div>
       </div>
-      <div class="tab" onclick="switchTab('all')" id="tab-all">
-        ALL RESULTS <span class="badge" id="badge-all">0</span>
+      <div class="tab-panel" id="dir-panel-log"><div class="log-stream" id="dir-log"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     MODULE 2 — SUBDOMAIN ENUMERATOR
+     ══════════════════════════════════════════════════════════ -->
+<div class="module" id="mod-sub">
+  <aside class="sidebar">
+    <div class="panel">
+      <div class="panel-label">TARGET</div>
+      <div class="field"><label>ROOT DOMAIN</label><input type="text" id="sub-target" placeholder="example.com"></div>
+      <div class="field"><label>CLOUDFLARE WORKER URL</label><input type="text" id="sub-worker" placeholder="https://your-worker.workers.dev"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-label">SOURCES</div>
+      <div class="wl-grid">
+        <label class="wl-item active" id="src-crt"><input type="checkbox" id="use-crt" checked>crt.sh</label>
+        <label class="wl-item active" id="src-ht"><input type="checkbox" id="use-ht" checked>HackerTarget</label>
+        <label class="wl-item active" id="src-brute"><input type="checkbox" id="use-brute" checked>DNS BRUTE</label>
+        <label class="wl-item" id="src-otx"><input type="checkbox" id="use-otx">AlienVault</label>
       </div>
-      <div class="tab" onclick="switchTab('log')" id="tab-log">
-        LOG STREAM
+      <div class="field-note" style="margin-top:.5rem;">crt.sh and HackerTarget are free, no key needed. DNS brute runs via your Worker.</div>
+    </div>
+    <div class="panel">
+      <div class="panel-label">BRUTE FORCE CONFIG</div>
+      <div class="field"><label>WORDLIST SIZE</label>
+        <select id="sub-bruteSize">
+          <option value="small">Small (~50 common)</option>
+          <option value="medium" selected>Medium (~150 common)</option>
+          <option value="large">Large (~400 words)</option>
+        </select>
+      </div>
+      <div class="field"><label>CONCURRENCY</label>
+        <select id="sub-concurrency"><option value="5">5 — Stealth</option><option value="10" selected>10 — Balanced</option><option value="20">20 — Fast</option></select>
       </div>
     </div>
-
+    <button class="scan-btn" id="sub-scanBtn" onclick="startSubScan()">▶ ENUMERATE</button>
+    <button class="stop-btn" id="sub-stopBtn" onclick="subStop=true">■ STOP</button>
+    <div class="panel">
+      <div class="panel-label">STATS</div>
+      <div class="stats-grid">
+        <div class="stat-box"><div class="stat-num" id="sub-found" style="color:var(--accent)">0</div><div class="stat-label">FOUND</div></div>
+        <div class="stat-box"><div class="stat-num" id="sub-checked" style="color:var(--info)">0</div><div class="stat-label">CHECKED</div></div>
+        <div class="stat-box"><div class="stat-num" id="sub-live" style="color:var(--accent)">0</div><div class="stat-label">LIVE</div></div>
+        <div class="stat-box"><div class="stat-num" id="sub-sources" style="color:var(--muted)">0</div><div class="stat-label">SOURCES</div></div>
+      </div>
+      <div class="progress-wrap"><div class="progress-bar" id="sub-progress"></div></div>
+      <div class="progress-label" id="sub-progressLabel">Waiting...</div>
+    </div>
+  </aside>
+  <div class="main">
+    <div class="tabs">
+      <div class="tab active" onclick="subTab('results')" id="sub-tab-results">SUBDOMAINS <span class="badge" id="sub-badge-results">0</span></div>
+      <div class="tab" onclick="subTab('live')" id="sub-tab-live">LIVE ONLY <span class="badge" id="sub-badge-live">0</span></div>
+      <div class="tab" onclick="subTab('log')" id="sub-tab-log">LOG</div>
+    </div>
     <div class="results-area">
-
-      <!-- Disclaimer -->
-      <div class="disclaimer">
-        ⚠ LEGAL NOTICE: Only scan targets you own or have explicit written permission to test.
-        Unauthorized scanning may violate computer fraud laws including the CFAA.
-        Use responsibly on bug bounty programs within their defined scope.
+      <div class="disclaimer">⚠ Subdomain enumeration should only be performed against domains you own or have permission to test.</div>
+      <div class="tab-panel active" id="sub-panel-results">
+        <div class="summary-row" id="sub-summaryRow" style="display:none">
+          <div class="summary-card"><div>🌐</div><div><div class="sum-num" style="color:var(--accent)" id="sub-sum-total">0</div><div class="sum-lbl">TOTAL</div></div></div>
+          <div class="summary-card"><div>✅</div><div><div class="sum-num" style="color:var(--accent)" id="sub-sum-live">0</div><div class="sum-lbl">LIVE</div></div></div>
+          <div class="summary-card"><div>🔒</div><div><div class="sum-num" style="color:var(--info)" id="sub-sum-crt">0</div><div class="sum-lbl">FROM crt.sh</div></div></div>
+          <div class="summary-card"><div>💥</div><div><div class="sum-num" style="color:var(--purple)" id="sub-sum-brute">0</div><div class="sum-lbl">BRUTE FOUND</div></div></div>
+        </div>
+        <div class="filter-bar" id="sub-filterBar" style="display:none">
+          <input class="filter-input" placeholder="Filter subdomains..." oninput="subApplyFilter(this.value)">
+          <button class="filter-btn on" onclick="subStatusFilter('all',this)">ALL</button>
+          <button class="filter-btn" onclick="subStatusFilter('live',this)">LIVE ONLY</button>
+          <button class="filter-btn" onclick="subStatusFilter('crt',this)">crt.sh</button>
+          <button class="filter-btn" onclick="subStatusFilter('brute',this)">BRUTE</button>
+          <button class="filter-btn" onclick="subExportCSV()" style="margin-left:auto">⬇ CSV</button>
+        </div>
+        <div class="col-header col-sub" id="sub-colHeader" style="display:none"><span>SUBDOMAIN</span><span>IP</span><span>SOURCE</span><span>STATUS</span></div>
+        <div id="sub-results"><div class="placeholder"><div class="placeholder-icon">🌐</div><div class="placeholder-text">ENTER A ROOT DOMAIN AND CLICK ENUMERATE</div></div></div>
       </div>
-
-      <!-- Findings tab -->
-      <div class="tab-panel active" id="panel-findings">
-        <div class="summary-row" id="summaryRow" style="display:none">
-          <div class="summary-card">
-            <div class="summary-icon">🔴</div>
-            <div><div class="summary-num sev-critical" id="sum-critical">0</div><div class="summary-lbl">CRITICAL</div></div>
-          </div>
-          <div class="summary-card">
-            <div class="summary-icon">🟠</div>
-            <div><div class="summary-num sev-high" id="sum-high">0</div><div class="summary-lbl">HIGH</div></div>
-          </div>
-          <div class="summary-card">
-            <div class="summary-icon">🟡</div>
-            <div><div class="summary-num sev-medium" id="sum-medium">0</div><div class="summary-lbl">MEDIUM</div></div>
-          </div>
-          <div class="summary-card">
-            <div class="summary-icon">🟢</div>
-            <div><div class="summary-num" style="color:var(--accent)" id="sum-found">0</div><div class="summary-lbl">TOTAL FOUND</div></div>
-          </div>
-        </div>
-        <div class="filter-bar" id="filterBar" style="display:none">
-          <input class="filter-input" type="text" id="filterInput" placeholder="Filter paths..." oninput="applyFilter()">
-          <button class="filter-btn active" onclick="setStatusFilter('all', this)">ALL</button>
-          <button class="filter-btn" onclick="setStatusFilter('200', this)">200</button>
-          <button class="filter-btn" onclick="setStatusFilter('301', this)">301/302</button>
-          <button class="filter-btn" onclick="setStatusFilter('401', this)">401</button>
-          <button class="filter-btn" onclick="setStatusFilter('403', this)">403</button>
-          <button class="filter-btn" onclick="setStatusFilter('500', this)">500</button>
-          <button class="filter-btn" onclick="exportCSV()" style="margin-left:auto">⬇ CSV</button>
-        </div>
-        <div class="col-header" id="colHeader" style="display:none">
-          <span>STATUS</span><span>PATH</span><span>SIZE</span><span>SEVERITY</span>
-        </div>
-        <div id="findingsContainer">
-          <div class="placeholder">
-            <div class="placeholder-icon">🔍</div>
-            <div class="placeholder-text">
-              ENTER A TARGET URL AND SELECT WORDLISTS<br>
-              THEN CLICK START SCAN
-            </div>
-          </div>
-        </div>
+      <div class="tab-panel" id="sub-panel-live">
+        <div class="col-header col-sub"><span>SUBDOMAIN</span><span>IP</span><span>SOURCE</span><span>STATUS</span></div>
+        <div id="sub-live-container"></div>
       </div>
+      <div class="tab-panel" id="sub-panel-log"><div class="log-stream" id="sub-log"></div></div>
+    </div>
+  </div>
+</div>
 
-      <!-- Critical tab -->
-      <div class="tab-panel" id="panel-critical">
-        <div id="criticalContainer">
-          <div class="placeholder">
-            <div class="placeholder-icon">🚨</div>
-            <div class="placeholder-text">CRITICAL FINDINGS WILL APPEAR HERE</div>
-          </div>
-        </div>
+<!-- ══════════════════════════════════════════════════════════
+     MODULE 3 — HEADER ANALYZER
+     ══════════════════════════════════════════════════════════ -->
+<div class="module" id="mod-hdr">
+  <aside class="sidebar">
+    <div class="panel">
+      <div class="panel-label">TARGET</div>
+      <div class="field"><label>URL TO ANALYZE</label><input type="text" id="hdr-target" placeholder="https://example.com"></div>
+      <div class="field"><label>CLOUDFLARE WORKER URL</label><input type="text" id="hdr-worker" placeholder="https://your-worker.workers.dev"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-label">CHECK CATEGORIES</div>
+      <div class="wl-grid">
+        <label class="wl-item active"><input type="checkbox" id="hdr-security" checked>SECURITY HDRS</label>
+        <label class="wl-item active"><input type="checkbox" id="hdr-info" checked>INFO LEAKAGE</label>
+        <label class="wl-item active"><input type="checkbox" id="hdr-cors" checked>CORS</label>
+        <label class="wl-item active"><input type="checkbox" id="hdr-cache" checked>CACHING</label>
+        <label class="wl-item active"><input type="checkbox" id="hdr-cookie" checked>COOKIES</label>
+        <label class="wl-item active"><input type="checkbox" id="hdr-tls" checked>TLS / HSTS</label>
       </div>
-
-      <!-- All results tab -->
-      <div class="tab-panel" id="panel-all">
-        <div class="filter-bar">
-          <input class="filter-input" type="text" id="allFilterInput" placeholder="Filter all results..." oninput="applyAllFilter()">
-        </div>
-        <div class="col-header">
-          <span>STATUS</span><span>PATH</span><span>SIZE</span><span>SEVERITY</span>
-        </div>
-        <div id="allContainer">
-          <div class="placeholder">
-            <div class="placeholder-icon">📋</div>
-            <div class="placeholder-text">ALL CHECKED PATHS WILL APPEAR HERE</div>
-          </div>
-        </div>
+    </div>
+    <button class="scan-btn" id="hdr-scanBtn" onclick="startHdrScan()">▶ ANALYZE HEADERS</button>
+    <div class="panel">
+      <div class="panel-label">SCORE</div>
+      <div class="stats-grid">
+        <div class="stat-box"><div class="stat-num" id="hdr-score" style="color:var(--accent)">—</div><div class="stat-label">SCORE /100</div></div>
+        <div class="stat-box"><div class="stat-num" id="hdr-grade" style="color:var(--accent)">—</div><div class="stat-label">GRADE</div></div>
+        <div class="stat-box"><div class="stat-num" id="hdr-missing" style="color:var(--danger)">0</div><div class="stat-label">MISSING</div></div>
+        <div class="stat-box"><div class="stat-num" id="hdr-issues" style="color:var(--warn)">0</div><div class="stat-label">ISSUES</div></div>
       </div>
-
-      <!-- Log tab -->
-      <div class="tab-panel" id="panel-log">
-        <div class="log-stream" id="logStream">
-          <span class="log-line info">[WELCHSEC RECON] Ready. Enter target and click Start Scan.</span>
-        </div>
+    </div>
+  </aside>
+  <div class="main">
+    <div class="tabs">
+      <div class="tab active" onclick="hdrTab('analysis')" id="hdr-tab-analysis">ANALYSIS <span class="badge" id="hdr-badge-issues">0</span></div>
+      <div class="tab" onclick="hdrTab('raw')" id="hdr-tab-raw">RAW HEADERS</div>
+      <div class="tab" onclick="hdrTab('log')" id="hdr-tab-log">LOG</div>
+    </div>
+    <div class="results-area">
+      <div class="tab-panel active" id="hdr-panel-analysis">
+        <div id="hdr-analysis-container"><div class="placeholder"><div class="placeholder-icon">🛡</div><div class="placeholder-text">ENTER A URL AND CLICK ANALYZE HEADERS<br>CHECKS SECURITY HEADERS, COOKIES,<br>INFO LEAKAGE, CORS AND MORE</div></div></div>
       </div>
-
+      <div class="tab-panel" id="hdr-panel-raw">
+        <div id="hdr-raw-container"><div class="placeholder"><div class="placeholder-icon">📋</div><div class="placeholder-text">RAW RESPONSE HEADERS WILL APPEAR HERE</div></div></div>
+      </div>
+      <div class="tab-panel" id="hdr-panel-log"><div class="log-stream" id="hdr-log"></div></div>
     </div>
   </div>
 </div>
 
 <script>
-// ── Wordlists ─────────────────────────────────────────────────────────────────
-const WORDLISTS = {
-  admin: [
-    'admin', 'admin/', 'administrator', 'admin/login', 'admin/login.php',
-    'admin/index.php', 'admin.php', 'admin.html', 'login', 'login.php',
-    'login.html', 'login.aspx', 'signin', 'dashboard', 'dashboard/',
-    'panel', 'control', 'controlpanel', 'cp', 'manage', 'management',
-    'manager', 'adminpanel', 'admin_area', 'backend', 'staff',
-    'moderator', 'webadmin', 'siteadmin', 'admincp', 'useradmin',
-  ],
-  backups: [
-    'backup', 'backup/', 'backups/', 'backup.zip', 'backup.tar.gz',
-    'backup.sql', 'backup.db', 'site.zip', 'website.zip', 'www.zip',
-    'old/', 'old.zip', 'archive/', 'archives/', '_.bak', 'index.bak',
-    'index.php.bak', 'index.html.bak', 'web.config.bak', '.bak',
-    'database.sql', 'db.sql', 'dump.sql', 'data.sql', 'users.sql',
-    'full_backup.zip', 'site_backup.zip', '1.zip', '2.zip', 'temp/',
-    'tmp/', 'temp.zip', 'test.zip',
-  ],
-  config: [
-    '.env', '.env.local', '.env.production', '.env.backup', '.env.old',
-    'config.php', 'config.js', 'config.json', 'config.yml', 'config.yaml',
-    'configuration.php', 'settings.php', 'settings.py', 'settings.json',
-    'web.config', 'app.config', 'appsettings.json', 'database.php',
-    'db.php', 'db.json', 'db_config.php', 'wp-config.php', 'wp-config.php.bak',
-    'secrets.json', 'credentials.json', '.htpasswd', '.htaccess',
-    'phpinfo.php', 'info.php', 'server-status', 'server-info',
-    'composer.json', 'package.json', 'Gemfile', 'requirements.txt',
-    'Dockerfile', 'docker-compose.yml', '.dockerenv',
-  ],
-  api: [
-    'api/', 'api/v1/', 'api/v2/', 'api/v3/', 'api/docs', 'api/swagger',
-    'swagger.json', 'swagger.yaml', 'swagger-ui.html', 'openapi.json',
-    'openapi.yaml', 'api/health', 'api/status', 'api/info', 'api/debug',
-    'api/test', 'api/users', 'api/admin', 'api/config', 'api/keys',
-    'graphql', 'graphiql', 'v1/', 'v2/', 'v3/', 'rest/', 'api/endpoints',
-    'docs/api', 'api-docs', 'redoc', 'api/schema', 'api/metrics',
-  ],
-  vcs: [
-    '.git/', '.git/HEAD', '.git/config', '.git/index', '.git/COMMIT_EDITMSG',
-    '.git/logs/HEAD', '.gitignore', '.gitconfig', '.svn/', '.svn/entries',
-    '.hg/', '.hg/hgrc', 'CVS/', '.bzr/', 'BitKeeper/',
-    '.git/refs/heads/main', '.git/refs/heads/master',
-    '.github/', '.github/workflows/', 'CHANGELOG.md', 'CHANGES.md',
-    'README.md', 'TODO', 'TODO.md', 'INSTALL.md',
-  ],
-  logs: [
-    'logs/', 'log/', 'error.log', 'access.log', 'debug.log', 'app.log',
-    'application.log', 'system.log', 'server.log', 'php_error.log',
-    'error_log', 'laravel.log', 'storage/logs/laravel.log',
-    'var/log/', 'logs/error.log', 'logs/access.log', 'logs/debug.log',
-    'log.txt', 'errors.txt', 'debug.txt', 'trace.log',
-  ],
-  database: [
-    'db/', 'database/', 'data/', 'phpmyadmin/', 'phpmyadmin/index.php',
-    'pma/', 'adminer.php', 'adminer/', 'dbadmin/', 'mysql/', 'sql/',
-    'data.db', 'database.db', 'app.db', 'users.db', 'site.db',
-    'db.sqlite', 'database.sqlite', 'data.sqlite',
-    'export.sql', 'import.sql', 'schema.sql',
-  ],
-  uploads: [
-    'uploads/', 'upload/', 'files/', 'file/', 'media/', 'assets/',
-    'images/', 'img/', 'documents/', 'docs/', 'static/',
-    'uploads/shell.php', 'uploads/cmd.php', 'files/shell.php',
-    'content/uploads/', 'wp-content/uploads/', 'user-uploads/',
-    'attachments/', 'filemanager/', 'fileupload/',
-  ],
-  wordpress: [
-    'wp-admin/', 'wp-admin/admin.php', 'wp-login.php', 'wp-config.php',
-    'wp-content/', 'wp-includes/', 'wp-json/', 'wp-json/wp/v2/users',
-    'xmlrpc.php', 'wp-cron.php', 'wp-trackback.php',
-    'wp-content/debug.log', 'wp-content/uploads/', 'wp-admin/setup-config.php',
-    'wp-admin/install.php', 'readme.html', 'license.txt',
-    'wp-config-sample.php', 'wp-blog-header.php',
-  ],
-  debug: [
-    'phpinfo.php', 'info.php', 'php_info.php', 'test.php', 'debug.php',
-    'status.php', 'health.php', 'healthz', 'health', 'ping', 'pong',
-    'test/', 'testing/', 'dev/', 'development/', 'staging/',
-    'console/', 'shell/', 'terminal/', 'eval.php', 'cmd.php',
-    'trace/', 'debug/', 'profiler/', 'metrics', 'actuator/',
-    'actuator/health', 'actuator/env', 'actuator/mappings',
-    '.well-known/', 'robots.txt', 'sitemap.xml', 'security.txt',
-    '.well-known/security.txt',
-  ],
-  cloud: [
-    'http://169.254.169.254/latest/meta-data/',
-    'http://169.254.169.254/latest/meta-data/iam/security-credentials/',
-    'http://metadata.google.internal/computeMetadata/v1/',
-    'http://169.254.169.254/metadata/instance',
-    '.aws/', '.aws/credentials', '.aws/config',
-    'aws.json', 'gcp.json', 'azure.json',
-    's3.amazonaws.com', '.s3cfg', '.boto',
-  ],
-  cve: [
-    // Log4Shell
-    'solr/', 'solr/admin/', 'elastic/', 'elasticsearch/',
-    // Spring4Shell
-    'spring/', 'actuator/', 'actuator/gateway/routes',
-    // Apache paths
-    'cgi-bin/', 'cgi-bin/test-cgi', 'cgi-bin/printenv',
-    // Struts
-    'struts/', 'index.action', 'login.action', 'register.action',
-    // IIS
-    'iisstart.htm', 'iisstart.png', '_vti_bin/', '_vti_pvt/',
-    // Exposed installs
-    'setup.php', 'install.php', 'install/', 'setup/', 'upgrade.php',
-    // Jenkins
-    'jenkins/', 'jenkins/script', 'jenkins/api/json',
-    // Jira/Confluence
-    'jira/', 'confluence/', 'wiki/',
-  ],
-};
-
-// Severity classification
-function classifyFinding(path, status, contentType) {
-  const p = path.toLowerCase();
-
-  // Critical
-  if (status === 200) {
-    if (p.match(/\.(env|bak|sql|config|log|key|pem|p12|pfx|secret|credentials|htpasswd)(\?|$)/)) return 'CRITICAL';
-    if (p.match(/wp-config|database\.php|db\.php|settings\.php.*password|credentials|secrets/)) return 'CRITICAL';
-    if (p.match(/\.(git|svn)\//)) return 'CRITICAL';
-    if (p.match(/phpmyadmin|adminer|dbadmin/)) return 'CRITICAL';
-    if (p.includes('169.254.169.254')) return 'CRITICAL';
-    if (p.match(/shell\.php|cmd\.php|eval\.php|webshell/)) return 'CRITICAL';
-    if (p.match(/backup.*\.(zip|tar|gz|rar|7z)|\.zip$|\.sql$/)) return 'CRITICAL';
-  }
-
-  // High
-  if (status === 200) {
-    if (p.match(/admin|administrator|dashboard|control.?panel|manage/)) return 'HIGH';
-    if (p.match(/phpinfo|server.status|server.info/)) return 'HIGH';
-    if (p.match(/actuator|debug|console|terminal|shell/)) return 'HIGH';
-    if (p.match(/api.*(keys|token|secret|admin|user)/)) return 'HIGH';
-    if (p.match(/\.(log|bak|old|orig|copy|tmp)$/)) return 'HIGH';
-    if (p.match(/wp-admin|xmlrpc\.php|wp-login/)) return 'HIGH';
-    if (p.match(/install\.php|setup\.php|upgrade\.php/)) return 'HIGH';
-  }
-  if (status === 403 && p.match(/admin|dashboard|control|manage/)) return 'HIGH';
-
-  // Medium
-  if (status === 200) {
-    if (p.match(/upload|files|media|documents/)) return 'MEDIUM';
-    if (p.match(/api\/v[0-9]|swagger|openapi|graphql/)) return 'MEDIUM';
-    if (p.match(/readme|changelog|license|todo|install/)) return 'MEDIUM';
-    if (p.match(/logs\/|log\//)) return 'MEDIUM';
-    if (p.match(/test|testing|staging|dev\//)) return 'MEDIUM';
-  }
-  if (status === 401) return 'MEDIUM';
-  if (status === 500) return 'MEDIUM';
-
-  // Low / Info
-  if (status === 200) return 'LOW';
-  if (status === 301 || status === 302) return 'INFO';
-  if (status === 403) return 'INFO';
-
-  return 'INFO';
+// ── Module switching ──────────────────────────────────────────────────────────
+function switchModule(name) {
+  document.querySelectorAll('.module').forEach(m => m.classList.remove('active'));
+  document.querySelectorAll('.mod-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('mod-' + name).classList.add('active');
+  document.getElementById('modtab-' + name).classList.add('active');
 }
 
-// ── State ─────────────────────────────────────────────────────────────────────
-let scanning      = false;
-let stopRequested = false;
-let allResults    = [];
-let findings      = [];
-let checked       = 0;
-let totalPaths    = 0;
-let activeStatusFilter = 'all';
-let counts        = { critical: 0, high: 0, medium: 0, low: 0, info: 0, errors: 0 };
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-function log(msg, type='') {
-  const el = document.getElementById('logStream');
-  const line = document.createElement('span');
-  line.className = 'log-line ' + type;
-  line.textContent = `[${new Date().toTimeString().slice(0,8)}] ${msg}`;
+// ── Shared helpers ────────────────────────────────────────────────────────────
+function log(logId, msg, type='') {
+  const el = document.getElementById(logId);
+  if (!el) return;
+  const span = document.createElement('span');
+  span.className = 'log-line ' + type;
+  span.textContent = '[' + new Date().toTimeString().slice(0,8) + '] ' + msg;
   el.appendChild(document.createElement('br'));
-  el.appendChild(line);
+  el.appendChild(span);
   el.scrollTop = el.scrollHeight;
 }
 
@@ -988,313 +450,695 @@ function setStatus(text, state='') {
   document.getElementById('statusLed').className = 'status-led ' + state;
 }
 
-function switchTab(name) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-  document.getElementById('tab-' + name).classList.add('active');
-  document.getElementById('panel-' + name).classList.add('active');
+function switchTab(prefix, name) {
+  document.querySelectorAll('[id^="' + prefix + '-tab-"]').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('[id^="' + prefix + '-panel-"]').forEach(p => p.classList.remove('active'));
+  document.getElementById(prefix + '-tab-' + name).classList.add('active');
+  document.getElementById(prefix + '-panel-' + name).classList.add('active');
 }
 
-function updateStats() {
-  document.getElementById('statChecked').textContent  = checked;
-  document.getElementById('statFound').textContent    = findings.length;
-  document.getElementById('statCritical').textContent = counts.critical;
-  document.getElementById('statErrors').textContent   = counts.errors;
-  document.getElementById('badge-findings').textContent = findings.length;
-  document.getElementById('badge-critical').textContent = counts.critical;
-  document.getElementById('badge-all').textContent    = allResults.length;
-  document.getElementById('sum-critical').textContent = counts.critical;
-  document.getElementById('sum-high').textContent     = counts.high;
-  document.getElementById('sum-medium').textContent   = counts.medium;
-  document.getElementById('sum-found').textContent    = findings.length;
-  const pct = totalPaths > 0 ? (checked / totalPaths * 100) : 0;
-  document.getElementById('progressBar').style.width  = pct + '%';
-  document.getElementById('progressLabel').textContent = checked + ' / ' + totalPaths + ' paths';
-}
+function dirTab(n) { switchTab('dir', n); }
+function subTab(n) { switchTab('sub', n); }
+function hdrTab(n) { switchTab('hdr', n); }
 
-// Wordlist toggles
-document.querySelectorAll('.wl-item').forEach(item => {
-  item.addEventListener('click', () => {
-    item.classList.toggle('active');
-    item.querySelector('input').checked = item.classList.contains('active');
+// ── Shared Worker probe ───────────────────────────────────────────────────────
+async function probe(workerUrl, url) {
+  const r = await fetch(workerUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'probe', url })
   });
-});
-
-function getSelectedWordlists() {
-  const selected = [];
-  document.querySelectorAll('.wl-item.active input').forEach(cb => selected.push(cb.value));
-  return selected;
+  if (!r.ok) return null;
+  const d = await r.json();
+  return d.error ? null : d;
 }
 
-function buildPathList(base, wordlists) {
-  const paths = new Set();
-  wordlists.forEach(wl => {
-    if (WORDLISTS[wl]) WORDLISTS[wl].forEach(p => paths.add(p));
+async function dnsLookup(workerUrl, hostname) {
+  const r = await fetch(workerUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'dns', hostname })
   });
-  return [...paths].map(p => {
-    // Handle absolute URLs (cloud metadata)
-    if (p.startsWith('http')) return p;
-    // Normalise base
-    const b = base.replace(/\/$/, '');
-    return b + '/' + p.replace(/^\//, '');
-  });
+  if (!r.ok) return null;
+  const d = await r.json();
+  return d.error ? null : d;
 }
 
-// ── Result rendering ──────────────────────────────────────────────────────────
-function renderRow(result) {
-  const sClass = result.status >= 500 ? 's500'
-    : result.status === 403 ? 's403'
-    : result.status === 401 ? 's401'
-    : (result.status === 301 || result.status === 302) ? 's' + result.status
-    : result.status === 200 ? 's200' : '';
+// ══════════════════════════════════════════════════════════════════════════════
+// MODULE 1 — DIRECTORY SCAN
+// ══════════════════════════════════════════════════════════════════════════════
+const WORDLISTS = {
+  admin:['admin','admin/','administrator','admin/login','admin/login.php','admin/index.php','admin.php','admin.html','login','login.php','login.html','login.aspx','signin','dashboard','dashboard/','panel','control','controlpanel','cp','manage','management','manager','adminpanel','admin_area','backend','staff','moderator','webadmin','siteadmin'],
+  backups:['backup','backup/','backups/','backup.zip','backup.tar.gz','backup.sql','backup.db','site.zip','website.zip','www.zip','old/','old.zip','archive/','archives/','_.bak','index.bak','index.php.bak','index.html.bak','web.config.bak','database.sql','db.sql','dump.sql','data.sql','users.sql','full_backup.zip','site_backup.zip','temp/','tmp/','test.zip'],
+  config:['.env','.env.local','.env.production','.env.backup','.env.old','config.php','config.js','config.json','config.yml','config.yaml','configuration.php','settings.php','settings.py','settings.json','web.config','app.config','appsettings.json','database.php','db.php','db.json','db_config.php','wp-config.php','wp-config.php.bak','secrets.json','credentials.json','.htpasswd','.htaccess','phpinfo.php','info.php','server-status','server-info','composer.json','package.json','Gemfile','requirements.txt','Dockerfile','docker-compose.yml'],
+  api:['api/','api/v1/','api/v2/','api/v3/','api/docs','api/swagger','swagger.json','swagger.yaml','swagger-ui.html','openapi.json','openapi.yaml','api/health','api/status','api/info','api/debug','api/test','api/users','api/admin','api/config','api/keys','graphql','graphiql','v1/','v2/','v3/','rest/','api/endpoints','docs/api','api-docs','redoc','api/schema','api/metrics'],
+  vcs:['.git/','.git/HEAD','.git/config','.git/index','.git/COMMIT_EDITMSG','.git/logs/HEAD','.gitignore','.gitconfig','.svn/','.svn/entries','.hg/','.hg/hgrc','.git/refs/heads/main','.git/refs/heads/master','.github/','CHANGELOG.md','README.md','TODO'],
+  logs:['logs/','log/','error.log','access.log','debug.log','app.log','application.log','system.log','server.log','php_error.log','error_log','laravel.log','storage/logs/laravel.log','log.txt','errors.txt','trace.log'],
+  database:['db/','database/','data/','phpmyadmin/','phpmyadmin/index.php','pma/','adminer.php','adminer/','dbadmin/','mysql/','sql/','data.db','database.db','app.db','users.db','site.db','db.sqlite','database.sqlite','export.sql','schema.sql'],
+  uploads:['uploads/','upload/','files/','file/','media/','assets/','images/','img/','documents/','docs/','static/','content/uploads/','wp-content/uploads/','user-uploads/','attachments/','filemanager/'],
+  wordpress:['wp-admin/','wp-admin/admin.php','wp-login.php','wp-config.php','wp-content/','wp-includes/','wp-json/','wp-json/wp/v2/users','xmlrpc.php','wp-cron.php','wp-content/debug.log','wp-admin/setup-config.php','wp-admin/install.php','readme.html','license.txt'],
+  debug:['phpinfo.php','info.php','test.php','debug.php','status.php','health.php','healthz','health','ping','test/','testing/','dev/','development/','staging/','console/','shell/','metrics','actuator/','actuator/health','actuator/env','actuator/mappings','.well-known/','robots.txt','sitemap.xml','security.txt','.well-known/security.txt'],
+  cloud:['http://169.254.169.254/latest/meta-data/','http://169.254.169.254/latest/meta-data/iam/security-credentials/','.aws/credentials','.aws/config','aws.json','gcp.json','azure.json','.s3cfg'],
+  cve:['solr/','solr/admin/','elastic/','elasticsearch/','spring/','actuator/gateway/routes','cgi-bin/','cgi-bin/test-cgi','index.action','login.action','struts/','iisstart.htm','_vti_bin/','setup.php','install.php','install/','setup/','upgrade.php','jenkins/','jenkins/script','jenkins/api/json','jira/','confluence/']
+};
 
-  const sevClass = result.severity === 'CRITICAL' ? 'type-critical'
-    : result.severity === 'HIGH'   ? 'type-high'
-    : result.severity === 'MEDIUM' ? 'type-medium'
-    : result.severity === 'LOW'    ? 'type-low'
-    : 'type-info';
-
-  const size = result.size > 0
-    ? (result.size > 1024 ? (result.size / 1024).toFixed(1) + ' KB' : result.size + ' B')
-    : '—';
-
-  return `<div class="result-row ${sClass}" data-status="${result.status}" data-path="${result.path}">
-    <div class="status-code">${result.status}</div>
-    <div class="result-path"><a href="${result.url}" target="_blank" rel="noopener">${result.path}</a></div>
-    <div class="result-size">${size}</div>
-    <span class="result-type ${sevClass}">${result.severity}</span>
-  </div>`;
-}
-
-function addResult(result) {
-  allResults.push(result);
-  const allC = document.getElementById('allContainer');
-  if (allC.querySelector('.placeholder')) allC.innerHTML = '';
-  allC.insertAdjacentHTML('beforeend', renderRow(result));
-
-  if (result.status !== 404) {
-    findings.push(result);
-
-    // Update severity counts
-    const sev = result.severity.toLowerCase();
-    if (counts[sev] !== undefined) counts[sev]++;
-
-    const fc = document.getElementById('findingsContainer');
-    if (fc.querySelector('.placeholder')) {
-      fc.innerHTML = '';
-      document.getElementById('summaryRow').style.display = '';
-      document.getElementById('filterBar').style.display = '';
-      document.getElementById('colHeader').style.display = '';
-    }
-    fc.insertAdjacentHTML('beforeend', renderRow(result));
-
-    // Critical tab
-    if (result.severity === 'CRITICAL' || result.severity === 'HIGH') {
-      const cc = document.getElementById('criticalContainer');
-      if (cc.querySelector('.placeholder')) cc.innerHTML = '';
-      cc.insertAdjacentHTML('beforeend', renderRow(result));
-    }
+function classify(path, status) {
+  const p = path.toLowerCase();
+  if (status === 200) {
+    if (p.match(/\.(env|bak|sql|key|pem|p12|pfx|secret|credentials|htpasswd)(\?|$)/)) return 'CRITICAL';
+    if (p.match(/wp-config|db\.php|settings.*password|secrets\.json|credentials\.json/)) return 'CRITICAL';
+    if (p.match(/\/\.git\/|\/\.svn\//)) return 'CRITICAL';
+    if (p.match(/phpmyadmin|adminer|dbadmin/)) return 'CRITICAL';
+    if (p.includes('169.254.169.254')) return 'CRITICAL';
+    if (p.match(/shell\.php|cmd\.php|eval\.php/)) return 'CRITICAL';
+    if (p.match(/backup.*\.(zip|tar|gz|rar|7z)|\.zip$|\.sql$/)) return 'CRITICAL';
+    if (p.match(/admin|administrator|dashboard|control.?panel/)) return 'HIGH';
+    if (p.match(/phpinfo|server.status|server.info|actuator/)) return 'HIGH';
+    if (p.match(/api.*(keys|token|secret|admin)/)) return 'HIGH';
+    if (p.match(/\.(log|bak|old|orig|copy|tmp)$/)) return 'HIGH';
+    if (p.match(/wp-admin|xmlrpc\.php|wp-login/)) return 'HIGH';
+    if (p.match(/install\.php|setup\.php|upgrade\.php/)) return 'HIGH';
+    if (p.match(/upload|files|media|documents/)) return 'MEDIUM';
+    if (p.match(/api\/v[0-9]|swagger|openapi|graphql/)) return 'MEDIUM';
+    if (p.match(/logs\/|log\//)) return 'MEDIUM';
+    if (p.match(/test|testing|staging|dev\//)) return 'MEDIUM';
+    return 'LOW';
   }
-  updateStats();
+  if (status === 401) return 'MEDIUM';
+  if (status === 500) return 'MEDIUM';
+  if (status === 403 && p.match(/admin|dashboard|control/)) return 'HIGH';
+  return 'INFO';
 }
 
-// ── Filter ─────────────────────────────────────────────────────────────────────
-function setStatusFilter(status, btn) {
-  activeStatusFilter = status;
-  document.querySelectorAll('.filter-bar .filter-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  applyFilter();
+let dirStop = false;
+let dirFindings = [], dirCounts = { critical:0, high:0, medium:0, low:0, info:0, errors:0 };
+let dirChecked = 0, dirTotal = 0;
+let dirActiveFilter = 'all';
+
+function dirSevClass(sev) {
+  return 'sev-' + sev.toLowerCase();
 }
 
-function applyFilter() {
-  const text = document.getElementById('filterInput').value.toLowerCase();
-  document.querySelectorAll('#findingsContainer .result-row').forEach(row => {
-    const path = row.dataset.path.toLowerCase();
-    const status = row.dataset.status;
-    const matchText = !text || path.includes(text);
-    const matchStatus = activeStatusFilter === 'all'
-      || status === activeStatusFilter
-      || (activeStatusFilter === '301' && (status === '301' || status === '302'));
-    row.style.display = (matchText && matchStatus) ? '' : 'none';
+function dirAddResult(r) {
+  const sClass = r.status===200?'sc-200':r.status===301?'sc-301':r.status===302?'sc-302':r.status===403?'sc-403':r.status===401?'sc-401':r.status>=500?'sc-500':'';
+  const sevClass = r.severity.toLowerCase();
+  const size = r.size > 1024 ? (r.size/1024).toFixed(1)+'KB' : r.size+'B';
+  const html = '<div class="result-row dir-row sev-'+sevClass+'" data-status="'+r.status+'" data-path="'+r.path+'">' +
+    '<div class="status-code '+sClass+'">'+r.status+'</div>' +
+    '<div class="result-path"><a href="'+r.url+'" target="_blank">'+r.path+'</a></div>' +
+    '<div style="font-family:\'Share Tech Mono\',monospace;font-size:.62rem;color:var(--muted);text-align:right">'+size+'</div>' +
+    '<span class="sev-badge '+sevClass+'">'+r.severity+'</span>' +
+    '</div>';
+
+  const allC = document.getElementById('dir-all-container');
+  allC.insertAdjacentHTML('beforeend', html);
+
+  dirFindings.push(r);
+  const fc = document.getElementById('dir-findings');
+  if (fc.querySelector('.placeholder')) {
+    fc.innerHTML = '';
+    document.getElementById('dir-summaryRow').style.display = '';
+    document.getElementById('dir-filterBar').style.display = '';
+    document.getElementById('dir-colHeader').style.display = '';
+  }
+  fc.insertAdjacentHTML('beforeend', html);
+
+  if (sevClass === 'critical' || sevClass === 'high') {
+    const cc = document.getElementById('dir-critical-container');
+    if (cc.querySelector('.placeholder')) cc.innerHTML = '';
+    cc.insertAdjacentHTML('beforeend', html);
+  }
+
+  const s = r.severity.toLowerCase();
+  if (dirCounts[s] !== undefined) dirCounts[s]++;
+  dirUpdateStats();
+}
+
+function dirUpdateStats() {
+  document.getElementById('dir-checked').textContent = dirChecked;
+  document.getElementById('dir-found').textContent = dirFindings.length;
+  document.getElementById('dir-critical').textContent = dirCounts.critical;
+  document.getElementById('dir-errors').textContent = dirCounts.errors;
+  document.getElementById('dir-badge-findings').textContent = dirFindings.length;
+  document.getElementById('dir-badge-critical').textContent = dirCounts.critical;
+  document.getElementById('dir-badge-all').textContent = dirChecked;
+  document.getElementById('dir-sum-critical').textContent = dirCounts.critical;
+  document.getElementById('dir-sum-high').textContent = dirCounts.high;
+  document.getElementById('dir-sum-medium').textContent = dirCounts.medium;
+  document.getElementById('dir-sum-total').textContent = dirFindings.length;
+  const pct = dirTotal > 0 ? (dirChecked/dirTotal*100) : 0;
+  document.getElementById('dir-progress').style.width = pct + '%';
+  document.getElementById('dir-progressLabel').textContent = dirChecked + ' / ' + dirTotal + ' paths';
+}
+
+function dirApplyFilter(text) {
+  document.querySelectorAll('#dir-findings .result-row').forEach(row => {
+    const match = !text || row.dataset.path.toLowerCase().includes(text.toLowerCase());
+    const statusOk = dirActiveFilter === 'all' || row.dataset.status === dirActiveFilter;
+    row.style.display = match && statusOk ? '' : 'none';
   });
 }
 
-function applyAllFilter() {
-  const text = document.getElementById('allFilterInput').value.toLowerCase();
-  document.querySelectorAll('#allContainer .result-row').forEach(row => {
-    row.style.display = !text || row.dataset.path.toLowerCase().includes(text) ? '' : 'none';
-  });
+function dirStatusFilter(s, btn) {
+  dirActiveFilter = s;
+  document.querySelectorAll('#dir-filterBar .filter-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  dirApplyFilter('');
 }
 
-// ── Export ─────────────────────────────────────────────────────────────────────
-function exportCSV() {
-  if (!findings.length) return;
+function dirExportCSV() {
+  if (!dirFindings.length) return;
   let csv = 'Status,Path,URL,Size,Severity\n';
-  findings.forEach(r => {
-    csv += `${r.status},"${r.path}","${r.url}",${r.size},"${r.severity}"\n`;
-  });
-  const blob = new Blob([csv], { type: 'text/csv' });
+  dirFindings.forEach(r => { csv += r.status+',"'+r.path+'","'+r.url+'",'+r.size+',"'+r.severity+'"\n'; });
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'recon_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
+  a.download = 'dir_scan_'+new Date().toISOString().slice(0,10)+'.csv';
   a.style.display = 'none';
-  document.body.appendChild(a);
-  a.click();
+  document.body.appendChild(a); a.click();
   setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(a.href); }, 1000);
 }
 
-// ── Scan engine ────────────────────────────────────────────────────────────────
-async function checkPath(workerUrl, url, path) {
+document.querySelectorAll('#dir-wlGrid .wl-item').forEach(item => {
+  item.addEventListener('click', () => { item.classList.toggle('active'); item.querySelector('input').checked = item.classList.contains('active'); });
+});
+
+async function startDirScan() {
+  const target = document.getElementById('dir-target').value.trim();
+  const workerUrl = document.getElementById('dir-worker').value.trim();
+  const concurrency = parseInt(document.getElementById('dir-concurrency').value);
+  const delay = parseInt(document.getElementById('dir-delay').value);
+  const statusMode = document.getElementById('dir-statusFilter').value;
+  const wordlists = [...document.querySelectorAll('#dir-wlGrid .wl-item.active input')].map(i=>i.value);
+
+  if (!target) { alert('Enter a target URL'); return; }
+  if (!workerUrl) { alert('Enter your Cloudflare Worker URL'); return; }
+  if (!wordlists.length) { alert('Select at least one wordlist'); return; }
+
+  let base = target.startsWith('http') ? target : 'https://' + target;
+  base = base.replace(/\/$/, '');
+
+  dirStop = false; dirFindings = []; dirChecked = 0;
+  dirCounts = { critical:0, high:0, medium:0, low:0, info:0, errors:0 };
+  document.getElementById('dir-findings').innerHTML = '<div class="placeholder"><div class="placeholder-icon">⏳</div><div class="placeholder-text">SCANNING...</div></div>';
+  document.getElementById('dir-critical-container').innerHTML = '<div class="placeholder"><div class="placeholder-icon">🚨</div><div class="placeholder-text">SCANNING...</div></div>';
+  document.getElementById('dir-all-container').innerHTML = '';
+  document.getElementById('dir-summaryRow').style.display = 'none';
+  document.getElementById('dir-filterBar').style.display = 'none';
+  document.getElementById('dir-colHeader').style.display = 'none';
+  document.getElementById('dir-log').innerHTML = '';
+
+  const paths = new Set();
+  wordlists.forEach(wl => { if (WORDLISTS[wl]) WORDLISTS[wl].forEach(p => paths.add(p)); });
+  const items = [...paths].map(p => ({
+    url: p.startsWith('http') ? p : base + '/' + p.replace(/^\//, ''),
+    path: p.startsWith('http') ? p : '/' + p.replace(/^\//, '')
+  }));
+  dirTotal = items.length;
+
+  document.getElementById('dir-scanBtn').disabled = true;
+  document.getElementById('dir-stopBtn').className = 'stop-btn visible';
+  setStatus('SCANNING ' + base, 'scanning');
+  log('dir-log', 'Target: ' + base, 'info');
+  log('dir-log', 'Paths: ' + dirTotal + ' | Concurrency: ' + concurrency, 'info');
+
+  const queue = [...items];
+  const shouldInclude = s => statusMode === 'all' ? s !== 404 : statusMode === '200only' ? s === 200 : [200,301,302,401,403,500].includes(s);
+
+  async function worker() {
+    while (queue.length && !dirStop) {
+      const item = queue.shift();
+      try {
+        const data = await probe(workerUrl, item.url);
+        dirChecked++;
+        if (data && shouldInclude(data.status)) {
+          const sev = classify(item.path, data.status);
+          dirAddResult({ path: item.path, url: item.url, status: data.status, size: data.size||0, severity: sev });
+          if (sev === 'CRITICAL') log('dir-log', '[CRITICAL] ' + item.path + ' → ' + data.status, 'err');
+          else if (sev === 'HIGH') log('dir-log', '[HIGH] ' + item.path + ' → ' + data.status, 'warn');
+        }
+      } catch(e) { dirCounts.errors++; dirChecked++; }
+      dirUpdateStats();
+    }
+  }
+
+  const workers = Array.from({ length: concurrency }, () => worker());
+  // Stagger batches with delay
+  await Promise.all(workers);
+
+  document.getElementById('dir-scanBtn').disabled = false;
+  document.getElementById('dir-stopBtn').className = 'stop-btn';
+  setStatus(dirStop ? 'STOPPED' : 'COMPLETE — ' + dirFindings.length + ' findings', dirStop ? 'error' : 'done');
+  log('dir-log', (dirStop ? 'Stopped.' : 'Done.') + ' ' + dirFindings.length + ' findings / ' + dirChecked + ' checked', 'ok');
+  if (dirCounts.critical > 0) log('dir-log', dirCounts.critical + ' CRITICAL findings!', 'err');
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// MODULE 2 — SUBDOMAIN ENUMERATOR
+// ══════════════════════════════════════════════════════════════════════════════
+const BRUTE_SMALL = ['www','mail','ftp','smtp','pop','ns1','ns2','webmail','admin','portal','api','dev','staging','test','vpn','remote','blog','shop','store','secure','login','app','web','cdn','static','media','img','images','m','mobile','beta','dashboard','support','help','docs','forum','status','monitoring'];
+const BRUTE_MEDIUM = [...BRUTE_SMALL,'internal','intranet','corp','corporate','office','employee','staff','crm','erp','hr','finance','accounting','payroll','it','infra','devops','git','gitlab','github','jenkins','jira','confluence','wiki','ticket','servicedesk','vpn2','rdp','remote2','backup','archive','old','legacy','new','v2','api2','gateway','auth','sso','oauth','id','identity','db','database','sql','mysql','postgres','mongo','redis','elastic','kibana','grafana','prometheus','k8s','kubernetes','docker','registry','repo','artifact','nexus','sonar','mail2','smtp2','mx','mx1','mx2','imap','pop3','exchange','owa','autodiscover','lyncdiscover','sip','voip','phone'];
+const BRUTE_LARGE = [...BRUTE_MEDIUM,'assets','files','upload','uploads','download','downloads','content','data','reports','analytics','tracking','metrics','logs','log','audit','compliance','legal','privacy','policy','terms','careers','jobs','recruitment','press','news','events','partners','reseller','affiliate','customer','clients','vendor','supplier','procurement','sales','marketing','advertising','social','community','network','cloud','aws','azure','gcp','s3','bucket','storage','blob','object','cache','proxy','load','lb','balancer','firewall','waf','ids','ips','siem','soc','noc','helpdesk','itsm','cmdb','asset','inventory','patch','update','upgrade','deploy','release','prod','production','live','uat','qa','qc','perf','performance','stress','load2','sandbox','demo','poc','pilot','trial'];
+
+let subStop = false, subResults = [], subLive = [], subChecked = 0, subTotal = 0;
+let subCounts = { crt:0, ht:0, brute:0, otx:0, live:0 };
+
+function subAddResult(r) {
+  subResults.push(r);
+  const srcClass = r.source === 'crt.sh' ? 'src-crt' : r.source === 'HackerTarget' ? 'src-ht' : r.source === 'AlienVault' ? 'src-otx' : 'src-brute';
+  const statusBadge = r.live === true ? '<span class="sev-badge low">LIVE</span>' : r.live === false ? '<span class="sev-badge info">DEAD</span>' : '<span class="sev-badge info">UNKNOWN</span>';
+  const html = '<div class="result-row sub-row" data-source="'+r.source+'" data-live="'+(r.live||false)+'" data-sub="'+r.subdomain+'">' +
+    '<div class="sub-name"><a href="https://'+r.subdomain+'" target="_blank">'+r.subdomain+'</a></div>' +
+    '<div class="sub-ip" style="font-family:\'Share Tech Mono\',monospace;font-size:.62rem;color:var(--muted)">'+(r.ip||'—')+'</div>' +
+    '<span class="sub-src '+srcClass+'">'+r.source+'</span>' +
+    statusBadge +
+    '</div>';
+
+  const rc = document.getElementById('sub-results');
+  if (rc.querySelector('.placeholder')) {
+    rc.innerHTML = '';
+    document.getElementById('sub-summaryRow').style.display = '';
+    document.getElementById('sub-filterBar').style.display = '';
+    document.getElementById('sub-colHeader').style.display = '';
+  }
+  rc.insertAdjacentHTML('beforeend', html);
+
+  if (r.live) {
+    subLive.push(r);
+    const lc = document.getElementById('sub-live-container');
+    lc.insertAdjacentHTML('beforeend', html);
+    subCounts.live++;
+    document.getElementById('sub-badge-live').textContent = subLive.length;
+  }
+
+  const s = r.source === 'crt.sh' ? 'crt' : r.source === 'HackerTarget' ? 'ht' : r.source === 'AlienVault' ? 'otx' : 'brute';
+  if (subCounts[s] !== undefined) subCounts[s]++;
+  document.getElementById('sub-sum-crt').textContent = subCounts.crt;
+  document.getElementById('sub-sum-brute').textContent = subCounts.brute;
+  document.getElementById('sub-sum-total').textContent = subResults.length;
+  document.getElementById('sub-sum-live').textContent = subCounts.live;
+  document.getElementById('sub-found').textContent = subResults.length;
+  document.getElementById('sub-live').textContent = subCounts.live;
+  document.getElementById('sub-badge-results').textContent = subResults.length;
+}
+
+function subApplyFilter(text) {
+  document.querySelectorAll('#sub-results .result-row').forEach(row => {
+    row.style.display = !text || row.dataset.sub.includes(text.toLowerCase()) ? '' : 'none';
+  });
+}
+
+function subStatusFilter(s, btn) {
+  document.querySelectorAll('#sub-filterBar .filter-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  document.querySelectorAll('#sub-results .result-row').forEach(row => {
+    const show = s === 'all' ? true : s === 'live' ? row.dataset.live === 'true' : row.dataset.source.toLowerCase().includes(s);
+    row.style.display = show ? '' : 'none';
+  });
+}
+
+function subExportCSV() {
+  if (!subResults.length) return;
+  let csv = 'Subdomain,IP,Source,Live\n';
+  subResults.forEach(r => { csv += r.subdomain+','+(r.ip||'')+','+r.source+','+(r.live||false)+'\n'; });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
+  a.download = 'subdomains_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.style.display = 'none';
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(a.href); }, 1000);
+}
+
+async function fetchCRT(domain) {
+  const subs = new Set();
+  try {
+    const r = await fetch('https://crt.sh/?q=%25.' + encodeURIComponent(domain) + '&output=json');
+    if (!r.ok) return subs;
+    const data = await r.json();
+    data.forEach(entry => {
+      const names = entry.name_value.split('\n');
+      names.forEach(n => {
+        n = n.replace('*.', '').toLowerCase().trim();
+        if (n.endsWith('.' + domain) && n !== domain) subs.add(n);
+      });
+    });
+  } catch(e) {}
+  return subs;
+}
+
+async function fetchHackerTarget(domain) {
+  const subs = new Set();
+  try {
+    const r = await fetch('https://api.hackertarget.com/hostsearch/?q=' + encodeURIComponent(domain));
+    if (!r.ok) return subs;
+    const text = await r.text();
+    text.split('\n').forEach(line => {
+      const [sub] = line.split(',');
+      if (sub && sub.endsWith('.' + domain) && sub !== domain) subs.add(sub.toLowerCase().trim());
+    });
+  } catch(e) {}
+  return subs;
+}
+
+async function fetchAlienVault(domain) {
+  const subs = new Set();
+  try {
+    const r = await fetch('https://otx.alienvault.com/api/v1/indicators/domain/' + encodeURIComponent(domain) + '/passive_dns');
+    if (!r.ok) return subs;
+    const data = await r.json();
+    (data.passive_dns || []).forEach(entry => {
+      const h = (entry.hostname || '').toLowerCase().trim();
+      if (h.endsWith('.' + domain) && h !== domain) subs.add(h);
+    });
+  } catch(e) {}
+  return subs;
+}
+
+async function startSubScan() {
+  const domain = document.getElementById('sub-target').value.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+  const workerUrl = document.getElementById('sub-worker').value.trim();
+  const bruteSize = document.getElementById('sub-bruteSize').value;
+  const concurrency = parseInt(document.getElementById('sub-concurrency').value);
+  const useCrt = document.getElementById('use-crt').checked;
+  const useHT = document.getElementById('use-ht').checked;
+  const useBrute = document.getElementById('use-brute').checked;
+  const useOTX = document.getElementById('use-otx').checked;
+
+  if (!domain) { alert('Enter a root domain'); return; }
+  if (useBrute && !workerUrl) { alert('Enter your Cloudflare Worker URL for DNS brute force'); return; }
+
+  subStop = false; subResults = []; subLive = []; subChecked = 0;
+  subCounts = { crt:0, ht:0, brute:0, otx:0, live:0 };
+
+  document.getElementById('sub-results').innerHTML = '<div class="placeholder"><div class="placeholder-icon">⏳</div><div class="placeholder-text">ENUMERATING...</div></div>';
+  document.getElementById('sub-live-container').innerHTML = '';
+  document.getElementById('sub-log').innerHTML = '';
+  document.getElementById('sub-summaryRow').style.display = 'none';
+  document.getElementById('sub-filterBar').style.display = 'none';
+  document.getElementById('sub-colHeader').style.display = 'none';
+  document.getElementById('sub-scanBtn').disabled = true;
+  document.getElementById('sub-stopBtn').className = 'stop-btn visible';
+  document.getElementById('sub-sources').textContent = 0;
+  setStatus('ENUMERATING ' + domain, 'scanning');
+  log('sub-log', 'Target domain: ' + domain, 'info');
+
+  const allSubs = new Set();
+
+  // Phase 1 — Passive sources
+  const phases = [];
+  if (useCrt)   phases.push({ name: 'crt.sh',      fn: () => fetchCRT(domain) });
+  if (useHT)    phases.push({ name: 'HackerTarget', fn: () => fetchHackerTarget(domain) });
+  if (useOTX)   phases.push({ name: 'AlienVault',   fn: () => fetchAlienVault(domain) });
+
+  for (const phase of phases) {
+    if (subStop) break;
+    log('sub-log', 'Querying ' + phase.name + '...', 'info');
+    document.getElementById('sub-progressLabel').textContent = 'Querying ' + phase.name + '...';
+    try {
+      const found = await phase.fn();
+      found.forEach(s => {
+        if (!allSubs.has(s)) { allSubs.add(s); subAddResult({ subdomain: s, source: phase.name, live: null, ip: '' }); log('sub-log', '[' + phase.name + '] ' + s, 'ok'); }
+      });
+      log('sub-log', phase.name + ': ' + found.size + ' subdomains found', 'info');
+      document.getElementById('sub-sources').textContent = parseInt(document.getElementById('sub-sources').textContent) + 1;
+    } catch(e) { log('sub-log', 'Error querying ' + phase.name + ': ' + e.message, 'err'); }
+  }
+
+  // Phase 2 — DNS brute force via worker
+  if (useBrute && !subStop) {
+    const wordlist = bruteSize === 'small' ? BRUTE_SMALL : bruteSize === 'medium' ? BRUTE_MEDIUM : BRUTE_LARGE;
+    const queue = wordlist.filter(w => !allSubs.has(w + '.' + domain)).map(w => w + '.' + domain);
+    subTotal = queue.length;
+    log('sub-log', 'Starting DNS brute force: ' + queue.length + ' words', 'info');
+
+    async function bruteWorker() {
+      while (queue.length && !subStop) {
+        const sub = queue.shift();
+        subChecked++;
+        try {
+          const data = await dnsLookup(workerUrl, sub);
+          if (data && data.ip) {
+            log('sub-log', '[BRUTE] ' + sub + ' → ' + data.ip, 'warn');
+            subAddResult({ subdomain: sub, source: 'Brute Force', live: true, ip: data.ip });
+            allSubs.add(sub);
+          }
+        } catch(e) {}
+        document.getElementById('sub-checked').textContent = subChecked;
+        const pct = subTotal > 0 ? (subChecked/subTotal*100) : 0;
+        document.getElementById('sub-progress').style.width = pct + '%';
+        document.getElementById('sub-progressLabel').textContent = 'Brute: ' + subChecked + ' / ' + subTotal;
+      }
+    }
+
+    await Promise.all(Array.from({ length: concurrency }, bruteWorker));
+  }
+
+  // Phase 3 — Probe live status for passive results (top 30 to avoid rate limits)
+  if (!subStop && workerUrl) {
+    const toProbe = subResults.filter(r => r.live === null).slice(0, 30);
+    log('sub-log', 'Probing ' + toProbe.length + ' subdomains for live status...', 'info');
+    document.getElementById('sub-progressLabel').textContent = 'Probing live status...';
+    await Promise.all(toProbe.map(async r => {
+      try {
+        const data = await probe(workerUrl, 'https://' + r.subdomain);
+        r.live = data && data.status > 0 && data.status !== 0;
+        if (r.live) { subLive.push(r); subCounts.live++; document.getElementById('sub-live').textContent = subCounts.live; document.getElementById('sub-sum-live').textContent = subCounts.live; document.getElementById('sub-badge-live').textContent = subLive.length; }
+      } catch(e) { r.live = false; }
+    }));
+    // Re-render to update live status
+    document.getElementById('sub-results').innerHTML = '';
+    document.getElementById('sub-live-container').innerHTML = '';
+    document.getElementById('sub-summaryRow').style.display = 'none';
+    document.getElementById('sub-filterBar').style.display = 'none';
+    document.getElementById('sub-colHeader').style.display = 'none';
+    const allR = [...subResults];
+    subResults = []; subLive = []; subCounts.live = 0;
+    allR.forEach(r => subAddResult(r));
+  }
+
+  document.getElementById('sub-scanBtn').disabled = false;
+  document.getElementById('sub-stopBtn').className = 'stop-btn';
+  setStatus(subStop ? 'STOPPED' : 'COMPLETE — ' + subResults.length + ' subdomains', subStop ? 'error' : 'done');
+  log('sub-log', 'Done. ' + subResults.length + ' subdomains found, ' + subCounts.live + ' live.', 'ok');
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// MODULE 3 — HEADER ANALYZER
+// ══════════════════════════════════════════════════════════════════════════════
+const SECURITY_HEADERS = [
+  { name:'Content-Security-Policy', key:'content-security-policy', severity:'high', desc:'Prevents XSS, clickjacking and data injection by controlling which resources can load.', rec:'Add a strict CSP policy. At minimum: "default-src \'self\'"', points:15 },
+  { name:'Strict-Transport-Security', key:'strict-transport-security', severity:'high', desc:'Forces browsers to use HTTPS, preventing SSL stripping attacks.', rec:'Add: Strict-Transport-Security: max-age=31536000; includeSubDomains; preload', points:15 },
+  { name:'X-Frame-Options', key:'x-frame-options', severity:'medium', desc:'Prevents your site being embedded in iframes — protects against clickjacking.', rec:'Add: X-Frame-Options: DENY or SAMEORIGIN', points:10 },
+  { name:'X-Content-Type-Options', key:'x-content-type-options', severity:'medium', desc:'Stops browsers from MIME-sniffing responses, preventing content type attacks.', rec:'Add: X-Content-Type-Options: nosniff', points:10 },
+  { name:'Referrer-Policy', key:'referrer-policy', severity:'low', desc:'Controls how much referrer information is sent with requests.', rec:'Add: Referrer-Policy: strict-origin-when-cross-origin', points:5 },
+  { name:'Permissions-Policy', key:'permissions-policy', severity:'low', desc:'Controls which browser features can be used (camera, microphone, geolocation).', rec:'Add: Permissions-Policy: camera=(), microphone=(), geolocation=()', points:5 },
+  { name:'X-XSS-Protection', key:'x-xss-protection', severity:'low', desc:'Legacy XSS filter — most modern browsers handle this via CSP instead.', rec:'Add: X-XSS-Protection: 1; mode=block (for legacy browser support)', points:5 },
+];
+
+const INFO_LEAK_HEADERS = [
+  { name:'Server', key:'server', severity:'medium', desc:'Reveals the web server software and version, aiding attackers in targeting known vulnerabilities.' },
+  { name:'X-Powered-By', key:'x-powered-by', severity:'medium', desc:'Reveals the backend technology (e.g. PHP/7.4.3), making targeted attacks easier.' },
+  { name:'X-AspNet-Version', key:'x-aspnet-version', severity:'medium', desc:'Reveals the ASP.NET version in use, helping attackers identify specific vulnerabilities.' },
+  { name:'X-AspNetMvc-Version', key:'x-aspnetmvc-version', severity:'medium', desc:'Reveals the ASP.NET MVC version.' },
+  { name:'X-Generator', key:'x-generator', severity:'low', desc:'Reveals the CMS or framework used to generate the page.' },
+];
+
+const CORS_CHECKS = [
+  { name:'Access-Control-Allow-Origin', key:'access-control-allow-origin' },
+  { name:'Access-Control-Allow-Methods', key:'access-control-allow-methods' },
+  { name:'Access-Control-Allow-Credentials', key:'access-control-allow-credentials' },
+];
+
+async function startHdrScan() {
+  const target = document.getElementById('hdr-target').value.trim();
+  const workerUrl = document.getElementById('hdr-worker').value.trim();
+  if (!target) { alert('Enter a target URL'); return; }
+  if (!workerUrl) { alert('Enter your Cloudflare Worker URL'); return; }
+
+  let url = target.startsWith('http') ? target : 'https://' + target;
+
+  document.getElementById('hdr-analysis-container').innerHTML = '<div class="placeholder"><div class="placeholder-icon">⏳</div><div class="placeholder-text">ANALYZING HEADERS...</div></div>';
+  document.getElementById('hdr-raw-container').innerHTML = '<div class="placeholder"><div class="placeholder-icon">⏳</div><div class="placeholder-text">FETCHING...</div></div>';
+  document.getElementById('hdr-log').innerHTML = '';
+  document.getElementById('hdr-scanBtn').disabled = true;
+  setStatus('ANALYZING ' + url, 'scanning');
+  log('hdr-log', 'Fetching headers from: ' + url, 'info');
+
   try {
     const r = await fetch(workerUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'probe', url })
+      body: JSON.stringify({ action: 'headers', url })
     });
-    if (!r.ok) { counts.errors++; return null; }
     const data = await r.json();
-    if (data.error) { counts.errors++; return null; }
-    return {
-      path,
-      url,
-      status: data.status,
-      size: data.size || 0,
-      contentType: data.contentType || '',
-      severity: classifyFinding(path, data.status, data.contentType || '')
-    };
-  } catch(e) {
-    counts.errors++;
-    return null;
-  }
-}
+    if (data.error) throw new Error(data.error);
 
-async function runBatch(workerUrl, batch, concurrency, delay, statusMode) {
-  const queue = [...batch];
-  const active = new Set();
-  const results = [];
+    const headers = data.headers || {};
+    const rawHeaders = data.rawHeaders || {};
+    log('hdr-log', 'Got ' + Object.keys(headers).length + ' headers', 'ok');
 
-  const shouldInclude = (status) => {
-    if (statusMode === 'all') return status !== 404;
-    if (statusMode === 'interesting') return [200,301,302,401,403,500].includes(status);
-    if (statusMode === '200only') return status === 200;
-    return status !== 404;
-  };
+    // Score calculation
+    let score = 100;
+    let missingCount = 0;
+    let issueCount = 0;
+    const sections = [];
 
-  const runNext = async () => {
-    if (stopRequested || !queue.length) return;
-    const item = queue.shift();
-    const promise = checkPath(workerUrl, item.url, item.path).then(result => {
-      checked++;
-      if (result && shouldInclude(result.status)) {
-        addResult(result);
-        results.push(result);
-        const sev = result.severity;
-        if (sev === 'CRITICAL') log(`[CRITICAL] ${result.path} → ${result.status}`, 'err');
-        else if (sev === 'HIGH') log(`[HIGH] ${result.path} → ${result.status}`, 'warn');
-        else log(`[FOUND] ${result.path} → ${result.status}`, 'ok');
+    // Security headers check
+    if (document.getElementById('hdr-security').checked) {
+      const secCards = [];
+      SECURITY_HEADERS.forEach(h => {
+        const val = headers[h.key];
+        if (val) {
+          secCards.push(buildHdrCard(h.name, val, 'pass', h.desc, null, 'PRESENT ✓'));
+          log('hdr-log', '[PASS] ' + h.name, 'ok');
+        } else {
+          score -= h.points;
+          missingCount++;
+          issueCount++;
+          secCards.push(buildHdrCard(h.name, 'NOT PRESENT', h.severity, h.desc, h.rec, 'MISSING'));
+          log('hdr-log', '[MISSING] ' + h.name, 'err');
+        }
+      });
+      sections.push({ title: '🔒 Security Headers', cards: secCards });
+    }
+
+    // Info leakage
+    if (document.getElementById('hdr-info').checked) {
+      const infoCards = [];
+      INFO_LEAK_HEADERS.forEach(h => {
+        const val = headers[h.key];
+        if (val) {
+          score -= 5; issueCount++;
+          infoCards.push(buildHdrCard(h.name, val, h.severity, h.desc, 'Remove or obscure this header to reduce information exposure.', 'LEAKING'));
+          log('hdr-log', '[INFO LEAK] ' + h.name + ': ' + val, 'warn');
+        }
+      });
+      if (!infoCards.length) infoCards.push(buildHdrCard('Info Leakage', 'No sensitive server headers detected', 'pass', 'No server technology information is being leaked in response headers.', null, 'CLEAN ✓'));
+      sections.push({ title: '🕵 Information Leakage', cards: infoCards });
+    }
+
+    // CORS
+    if (document.getElementById('hdr-cors').checked) {
+      const corsCards = [];
+      const acao = headers['access-control-allow-origin'];
+      const acac = headers['access-control-allow-credentials'];
+      if (acao === '*') {
+        score -= 10; issueCount++;
+        corsCards.push(buildHdrCard('Access-Control-Allow-Origin', '*', 'high', 'Wildcard CORS allows any origin to read responses. Combined with credentials, this is critical.', 'Restrict to specific trusted origins instead of using wildcard (*)', 'WILDCARD'));
+        log('hdr-log', '[CORS] Wildcard origin detected!', 'err');
+      } else if (acao) {
+        corsCards.push(buildHdrCard('Access-Control-Allow-Origin', acao, 'pass', 'CORS is configured with a specific origin.', null, 'RESTRICTED ✓'));
+      } else {
+        corsCards.push(buildHdrCard('Access-Control-Allow-Origin', 'NOT PRESENT', 'pass', 'No CORS headers — cross-origin requests are blocked by default.', null, 'N/A'));
       }
-      active.delete(promise);
-      return runNext();
-    });
-    active.add(promise);
-    return promise;
-  };
+      if (acao === '*' && acac === 'true') {
+        score -= 15; issueCount++;
+        corsCards.push(buildHdrCard('CORS Misconfiguration', 'Wildcard + Credentials', 'critical', 'Wildcard CORS with credentials enabled is a critical misconfiguration allowing any site to make authenticated requests.', 'Never combine Access-Control-Allow-Origin: * with Access-Control-Allow-Credentials: true', 'CRITICAL'));
+        log('hdr-log', '[CRITICAL] Wildcard CORS + credentials!', 'err');
+      }
+      sections.push({ title: '🌐 CORS Configuration', cards: corsCards });
+    }
 
-  // Start initial batch
-  const starters = Array.from({ length: Math.min(concurrency, batch.length) }, runNext);
-  await Promise.all(starters);
+    // Cookie analysis
+    if (document.getElementById('hdr-cookie').checked) {
+      const cookieCards = [];
+      const setCookies = data.setCookies || [];
+      if (setCookies.length) {
+        setCookies.forEach(cookie => {
+          const hasSecure = /secure/i.test(cookie);
+          const hasHttpOnly = /httponly/i.test(cookie);
+          const hasSameSite = /samesite/i.test(cookie);
+          const issues = [];
+          if (!hasSecure) { issues.push('Missing Secure flag'); score -= 3; issueCount++; }
+          if (!hasHttpOnly) { issues.push('Missing HttpOnly flag'); score -= 3; issueCount++; }
+          if (!hasSameSite) { issues.push('Missing SameSite attribute'); score -= 2; issueCount++; }
+          const name = cookie.split('=')[0].trim();
+          const sev = issues.length > 1 ? 'high' : issues.length === 1 ? 'medium' : 'pass';
+          const rec = issues.length ? 'Add missing flags: ' + issues.join(', ') : null;
+          cookieCards.push(buildHdrCard('Cookie: ' + name, cookie.slice(0, 80) + (cookie.length > 80 ? '...' : ''), sev, issues.length ? 'Cookie security issues: ' + issues.join(', ') : 'Cookie has all security flags set.', rec, issues.length ? issues.join(', ') : 'SECURE ✓'));
+          log('hdr-log', (issues.length ? '[COOKIE ISSUE] ' : '[COOKIE OK] ') + name + (issues.length ? ': ' + issues.join(', ') : ''), issues.length ? 'warn' : 'ok');
+        });
+      } else {
+        cookieCards.push(buildHdrCard('Cookies', 'No Set-Cookie headers found', 'pass', 'No cookies are being set on this response.', null, 'NONE'));
+      }
+      sections.push({ title: '🍪 Cookie Security', cards: cookieCards });
+    }
 
-  // Wait for all active
-  while (active.size > 0) {
-    await Promise.all([...active]);
+    // HSTS / TLS
+    if (document.getElementById('hdr-tls').checked) {
+      const tlsCards = [];
+      const hsts = headers['strict-transport-security'];
+      if (hsts) {
+        const hasPreload = /preload/i.test(hsts);
+        const hasSubDomains = /includesubdomains/i.test(hsts);
+        const maxAgeMatch = hsts.match(/max-age=(\d+)/i);
+        const maxAge = maxAgeMatch ? parseInt(maxAgeMatch[1]) : 0;
+        const issues = [];
+        if (maxAge < 31536000) { issues.push('max-age less than 1 year'); score -= 3; issueCount++; }
+        if (!hasSubDomains) issues.push('includeSubDomains missing');
+        if (!hasPreload) issues.push('preload missing');
+        tlsCards.push(buildHdrCard('HSTS', hsts, issues.length ? 'medium' : 'pass', 'HTTP Strict Transport Security is configured.', issues.length ? 'Recommended: max-age=31536000; includeSubDomains; preload' : null, issues.length ? issues.join(', ') : 'CONFIGURED ✓'));
+        log('hdr-log', '[HSTS] ' + hsts, issues.length ? 'warn' : 'ok');
+      } else {
+        score -= 15; missingCount++; issueCount++;
+        tlsCards.push(buildHdrCard('HSTS', 'NOT PRESENT', 'high', 'No HSTS header found. The site does not enforce HTTPS connections.', 'Add: Strict-Transport-Security: max-age=31536000; includeSubDomains; preload', 'MISSING'));
+        log('hdr-log', '[MISSING] HSTS not present', 'err');
+      }
+      sections.push({ title: '🔐 TLS / HSTS', cards: tlsCards });
+    }
+
+    // Clamp score
+    score = Math.max(0, Math.min(100, score));
+    const grade = score >= 90 ? 'A+' : score >= 80 ? 'A' : score >= 70 ? 'B' : score >= 60 ? 'C' : score >= 50 ? 'D' : 'F';
+    const gradeColor = score >= 80 ? 'var(--accent)' : score >= 60 ? 'var(--warn)' : 'var(--danger)';
+
+    document.getElementById('hdr-score').textContent = score;
+    document.getElementById('hdr-score').style.color = gradeColor;
+    document.getElementById('hdr-grade').textContent = grade;
+    document.getElementById('hdr-grade').style.color = gradeColor;
+    document.getElementById('hdr-missing').textContent = missingCount;
+    document.getElementById('hdr-issues').textContent = issueCount;
+    document.getElementById('hdr-badge-issues').textContent = issueCount;
+
+    // Render sections
+    const html = sections.map(s => '<div class="hdr-section"><div class="hdr-section-title">' + s.title + '</div>' + s.cards.join('') + '</div>').join('');
+    document.getElementById('hdr-analysis-container').innerHTML = html;
+
+    // Raw headers
+    const rawHtml = '<div class="col-header col-hdr"><span>HEADER</span><span>VALUE</span><span>NOTE</span></div>' +
+      Object.entries(rawHeaders).map(([k, v]) => {
+        const isInteresting = SECURITY_HEADERS.some(h => h.key === k.toLowerCase()) || INFO_LEAK_HEADERS.some(h => h.key === k.toLowerCase());
+        return '<div class="result-row hdr-row ' + (isInteresting ? 'sev-medium' : '') + '">' +
+          '<div class="hdr-name">' + k + '</div>' +
+          '<div class="hdr-value">' + v + '</div>' +
+          '<div style="font-family:\'Share Tech Mono\',monospace;font-size:.58rem;color:var(--muted)">' + (isInteresting ? 'NOTABLE' : '') + '</div>' +
+          '</div>';
+      }).join('');
+    document.getElementById('hdr-raw-container').innerHTML = rawHtml || '<div class="placeholder"><div class="placeholder-icon">📋</div><div class="placeholder-text">NO HEADERS RETURNED</div></div>';
+
+    setStatus('COMPLETE — Score: ' + score + '/100 (' + grade + ')', 'done');
+    log('hdr-log', 'Done. Score: ' + score + '/100, Grade: ' + grade, 'ok');
+
+  } catch(err) {
+    console.error(err);
+    document.getElementById('hdr-analysis-container').innerHTML = '<div class="placeholder"><div class="placeholder-icon">⚠</div><div class="placeholder-text" style="color:var(--danger)">' + err.message + '</div></div>';
+    setStatus('ERROR', 'error');
+    log('hdr-log', 'Error: ' + err.message, 'err');
   }
 
-  if (delay > 0) await new Promise(r => setTimeout(r, delay));
-  return results;
+  document.getElementById('hdr-scanBtn').disabled = false;
 }
 
-async function startScan() {
-  const target    = document.getElementById('target').value.trim();
-  const workerUrl = document.getElementById('workerUrl').value.trim();
-  const concurrency = parseInt(document.getElementById('concurrency').value);
-  const delay     = parseInt(document.getElementById('delay').value);
-  const statusMode = document.getElementById('statusFilter').value;
-  const wordlists = getSelectedWordlists();
-
-  if (!target)    { alert('Please enter a target URL'); return; }
-  if (!workerUrl) { alert('Please enter your Cloudflare Worker URL'); return; }
-  if (!wordlists.length) { alert('Please select at least one wordlist'); return; }
-
-  // Normalise target
-  let base = target;
-  if (!base.startsWith('http')) base = 'https://' + base;
-  base = base.replace(/\/$/, '');
-
-  // Reset state
-  scanning = true;
-  stopRequested = false;
-  allResults = []; findings = []; checked = 0;
-  counts = { critical: 0, high: 0, medium: 0, low: 0, info: 0, errors: 0 };
-
-  document.getElementById('findingsContainer').innerHTML = '<div class="placeholder"><div class="placeholder-icon">⏳</div><div class="placeholder-text">SCANNING...</div></div>';
-  document.getElementById('criticalContainer').innerHTML = '<div class="placeholder"><div class="placeholder-icon">🚨</div><div class="placeholder-text">SCANNING FOR CRITICAL FINDINGS...</div></div>';
-  document.getElementById('allContainer').innerHTML = '';
-  document.getElementById('summaryRow').style.display = 'none';
-  document.getElementById('filterBar').style.display = 'none';
-  document.getElementById('colHeader').style.display = 'none';
-  document.getElementById('logStream').innerHTML = '';
-
-  updateStats();
-  document.getElementById('scanBtn').disabled = true;
-  document.getElementById('stopBtn').className = 'stop-btn visible';
-  setStatus('SCANNING ' + base, 'scanning');
-
-  const paths = buildPathList(base, wordlists);
-  totalPaths = paths.length;
-  updateStats();
-
-  log(`Target: ${base}`, 'info');
-  log(`Wordlists: ${wordlists.join(', ')}`, 'info');
-  log(`Total paths: ${totalPaths} | Concurrency: ${concurrency} | Delay: ${delay}ms`, 'info');
-  log(`Starting scan...`, 'info');
-
-  // Build items
-  const items = paths.map(url => {
-    const path = url.startsWith('http') ? url : url.replace(base, '') || '/';
-    return { url, path };
-  });
-
-  // Process in batches of concurrency
-  const batchSize = Math.max(concurrency * 5, 50);
-  for (let i = 0; i < items.length; i += batchSize) {
-    if (stopRequested) break;
-    const batch = items.slice(i, i + batchSize);
-    await runBatch(workerUrl, batch, concurrency, delay, statusMode);
-  }
-
-  scanning = false;
-  document.getElementById('scanBtn').disabled = false;
-  document.getElementById('stopBtn').className = 'stop-btn';
-
-  if (stopRequested) {
-    setStatus('STOPPED — ' + findings.length + ' findings', 'error');
-    log(`Scan stopped by user. ${findings.length} findings, ${checked} checked.`, 'warn');
-  } else {
-    setStatus('COMPLETE — ' + findings.length + ' findings', 'done');
-    log(`Scan complete! ${findings.length} findings from ${checked} paths checked.`, 'ok');
-    if (counts.critical > 0) log(`⚠ ${counts.critical} CRITICAL findings require immediate attention!`, 'err');
-  }
-
-  updateStats();
-
-  // Switch to findings tab
-  if (findings.length > 0) switchTab('findings');
-}
-
-function stopScan() {
-  stopRequested = true;
-  setStatus('STOPPING...', 'error');
-  log('Stop requested...', 'warn');
+function buildHdrCard(name, value, severity, desc, rec, badge) {
+  const sev = severity === 'pass' ? 'pass' : severity;
+  return '<div class="hdr-card ' + sev + '">' +
+    '<div class="hdr-card-top">' +
+    '<div class="hdr-card-name">' + name + '</div>' +
+    '<span class="sev-badge ' + sev + '">' + badge + '</span>' +
+    '</div>' +
+    '<div class="hdr-card-value">' + value + '</div>' +
+    '<div class="hdr-card-desc">' + desc + '</div>' +
+    (rec ? '<div class="hdr-card-rec">→ ' + rec + '</div>' : '') +
+    '</div>';
 }
 </script>
 </body>
