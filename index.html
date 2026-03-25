@@ -162,6 +162,49 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 .report-finding-title{font-weight:600;color:var(--heading);margin-bottom:.2rem;}
 .report-finding-detail{color:var(--muted);font-size:.72rem;}
 ::-webkit-scrollbar{width:4px;height:4px;}::-webkit-scrollbar-track{background:var(--bg);}::-webkit-scrollbar-thumb{background:var(--border);}
+
+  /* Google Dork module */
+  .dork-grid{display:grid;gap:.75rem;}
+  .dork-category{background:var(--bg);border:1px solid var(--border);border-left:3px solid var(--border);overflow:hidden;}
+  .dork-category.creds{border-left-color:var(--danger);}
+  .dork-category.docs{border-left-color:var(--info);}
+  .dork-category.config{border-left-color:var(--warn);}
+  .dork-category.db{border-left-color:var(--purple);}
+  .dork-category.login{border-left-color:var(--accent);}
+  .dork-category.camera{border-left-color:#ff8a65;}
+  .dork-category.vulns{border-left-color:var(--danger);}
+  .dork-category.email{border-left-color:var(--info);}
+  .dork-cat-header{padding:.65rem .85rem;display:flex;justify-content:space-between;align-items:center;cursor:pointer;border-bottom:1px solid transparent;transition:background .15s;}
+  .dork-cat-header:hover{background:rgba(255,255,255,.02);}
+  .dork-cat-header.open{border-bottom-color:var(--border);}
+  .dork-cat-title{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.85rem;color:var(--heading);text-transform:uppercase;letter-spacing:.04em;display:flex;align-items:center;gap:.5rem;}
+  .dork-cat-count{font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--muted);letter-spacing:.08em;}
+  .dork-cat-body{display:none;padding:.5rem;}
+  .dork-cat-body.open{display:block;}
+  .dork-item{display:grid;grid-template-columns:1fr auto auto;gap:.5rem;align-items:center;padding:.45rem .5rem;border-radius:2px;margin-bottom:2px;transition:background .1s;}
+  .dork-item:hover{background:rgba(255,255,255,.03);}
+  .dork-item-left{display:flex;flex-direction:column;gap:.2rem;}
+  .dork-name{font-size:.78rem;color:var(--heading);font-weight:500;}
+  .dork-desc{font-family:'Share Tech Mono',monospace;font-size:.58rem;color:var(--muted);line-height:1.4;}
+  .dork-query{font-family:'Share Tech Mono',monospace;font-size:.62rem;color:var(--accent);background:rgba(0,255,136,.05);border:1px solid rgba(0,255,136,.15);padding:.25rem .5rem;word-break:break-all;line-height:1.5;margin-top:.2rem;}
+  .dork-btn{font-family:'Share Tech Mono',monospace;font-size:.58rem;padding:.3rem .55rem;border:1px solid;cursor:pointer;background:transparent;transition:all .15s;white-space:nowrap;text-decoration:none;display:inline-flex;align-items:center;gap:.3rem;}
+  .dork-btn.google{color:var(--info);border-color:rgba(0,180,216,.3);}
+  .dork-btn.google:hover{background:rgba(0,180,216,.1);}
+  .dork-btn.copy{color:var(--muted);border-color:var(--border);}
+  .dork-btn.copy:hover{color:var(--accent);border-color:rgba(0,255,136,.3);}
+  .dork-risk{font-family:'Share Tech Mono',monospace;font-size:.55rem;padding:.1rem .3rem;border:1px solid;white-space:nowrap;}
+  .dork-risk.critical{color:var(--danger);border-color:rgba(255,71,87,.4);background:rgba(255,71,87,.08);}
+  .dork-risk.high{color:var(--warn);border-color:rgba(255,190,11,.4);background:rgba(255,190,11,.08);}
+  .dork-risk.medium{color:var(--info);border-color:rgba(0,180,216,.4);background:rgba(0,180,216,.08);}
+  .dork-cat-toggle{font-family:'Share Tech Mono',monospace;font-size:.6rem;color:var(--muted);}
+  .dork-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:.5rem;margin-bottom:1rem;}
+  .dork-sum-box{background:var(--bg);border:1px solid var(--border);padding:.5rem .65rem;text-align:center;}
+  .dork-sum-num{font-family:'Rajdhani',sans-serif;font-size:1.4rem;font-weight:700;line-height:1;}
+  .dork-sum-lbl{font-family:'Share Tech Mono',monospace;font-size:.5rem;color:var(--muted);letter-spacing:.1em;margin-top:.1rem;}
+  .dork-all-btn{font-family:'Share Tech Mono',monospace;font-size:.62rem;padding:.4rem .75rem;border:1px solid var(--accent);color:var(--accent);cursor:pointer;background:transparent;transition:all .15s;letter-spacing:.08em;}
+  .dork-all-btn:hover{background:rgba(0,255,136,.08);}
+  .copy-toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--accent);color:var(--bg);font-family:'Share Tech Mono',monospace;font-size:.7rem;padding:.5rem 1rem;z-index:1000;display:none;letter-spacing:.08em;}
+
 </style>
 </head>
 <body>
@@ -185,6 +228,7 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
   <div class="mod-tab" onclick="switchMod('whois')" id="mt-whois">🌍 WHOIS/DNS</div>
   <div class="mod-tab" onclick="switchMod('tech')" id="mt-tech">🖥 TECH SCAN</div>
   <div class="mod-tab" onclick="switchMod('s3')" id="mt-s3">☁ S3 BUCKETS</div>
+  <div class="mod-tab" onclick="switchMod('dork')" id="mt-dork">🔎 GOOGLE DORKS</div>
   <div class="mod-tab" onclick="switchMod('report')" id="mt-report">📄 REPORT</div>
 </div>
 
@@ -579,6 +623,83 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 </div>
 
 <!-- ═══════════════════ MODULE: REPORT ═══════════════════ -->
+<!-- ═══════════════════ MODULE: GOOGLE DORKS ═══════════════════ -->
+<div class="module" id="mod-dork">
+  <aside class="sidebar">
+    <div class="panel"><div class="panel-label">TARGET</div>
+      <div class="field"><label>TARGET DOMAIN</label><input type="text" id="dork-target" placeholder="example.com"></div>
+      <div class="fn" style="margin-top:.2rem">Enter your domain — all dork queries will be scoped to site:yourdomain.com</div>
+    </div>
+    <div class="panel"><div class="panel-label">CATEGORIES</div>
+      <div class="wl-grid" id="dork-cats">
+        <label class="wl-item active"><input type="checkbox" value="creds" checked>CREDENTIALS</label>
+        <label class="wl-item active"><input type="checkbox" value="docs" checked>DOCUMENTS</label>
+        <label class="wl-item active"><input type="checkbox" value="config" checked>CONFIG FILES</label>
+        <label class="wl-item active"><input type="checkbox" value="db" checked>DATABASES</label>
+        <label class="wl-item active"><input type="checkbox" value="login" checked>LOGIN PANELS</label>
+        <label class="wl-item active"><input type="checkbox" value="camera" checked>CAMERAS/IoT</label>
+        <label class="wl-item active"><input type="checkbox" value="vulns" checked>VULN SOFTWARE</label>
+        <label class="wl-item active"><input type="checkbox" value="email" checked>EMAIL/STAFF</label>
+      </div>
+    </div>
+    <button class="scan-btn" onclick="generateDorks()">▶ GENERATE DORKS</button>
+    <div class="panel"><div class="panel-label">TIPS</div>
+      <div class="fn" style="line-height:1.8">
+        • Click <span style="color:var(--info)">GOOGLE</span> to open query directly<br>
+        • Click <span style="color:var(--muted)">COPY</span> to copy query<br>
+        • Use only on domains you <strong style="color:var(--warn)">own or are authorized</strong> to test<br>
+        • Results may take time to appear in Google<br>
+        • Some queries may return no results — that is a good sign
+      </div>
+    </div>
+  </aside>
+  <div class="main">
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('dork','results')" id="dork-tab-results">DORK QUERIES <span class="badge" id="dork-b-results">0</span></div>
+      <div class="tab" onclick="switchTab('dork','all')" id="dork-tab-all">ALL QUERIES <span class="badge" id="dork-b-all">0</span></div>
+      <div class="tab" onclick="switchTab('dork','guide')" id="dork-tab-guide">HOW TO USE</div>
+    </div>
+    <div class="results-area">
+      <div class="disclaimer">⚠ Google dorking is a legitimate reconnaissance technique for authorized security testing. Only run these queries against domains you own or have explicit written permission to test. Unauthorized reconnaissance may violate computer fraud laws.</div>
+      <div class="tab-panel active" id="dork-panel-results">
+        <div id="dork-output">
+          <div class="placeholder"><div class="placeholder-icon">🔎</div><div class="placeholder-text">ENTER YOUR DOMAIN AND CLICK GENERATE DORKS<br>CREATES TARGETED GOOGLE SEARCH QUERIES TO FIND<br>EXPOSED SENSITIVE DATA INDEXED BY GOOGLE</div></div>
+        </div>
+      </div>
+      <div class="tab-panel" id="dork-panel-all">
+        <div id="dork-all-output">
+          <div class="placeholder"><div class="placeholder-icon">📋</div><div class="placeholder-text">ALL GENERATED QUERIES APPEAR HERE AS A FLAT LIST<br>EASY TO COPY AND SHARE WITH YOUR SECURITY TEAM</div></div>
+        </div>
+      </div>
+      <div class="tab-panel" id="dork-panel-guide">
+        <div style="font-family:'Share Tech Mono',monospace;font-size:.7rem;line-height:2;color:var(--text);padding:.5rem">
+          <div style="color:var(--accent);font-size:.8rem;margin-bottom:.75rem;font-family:'Rajdhani',sans-serif;font-weight:700;text-transform:uppercase">HOW GOOGLE DORKING WORKS</div>
+          <div style="color:var(--muted);margin-bottom:1rem">Google indexes publicly accessible web content. If sensitive files are accidentally exposed on a web server, Google may index them and they become searchable. Dorking uses advanced search operators to find this data.</div>
+          <div style="color:var(--accent);margin-bottom:.3rem">COMMON OPERATORS:</div>
+          <div style="color:var(--muted);margin-bottom:.75rem">
+            <span style="color:var(--text)">site:</span> — restrict results to a specific domain<br>
+            <span style="color:var(--text)">filetype:</span> — search for specific file types<br>
+            <span style="color:var(--text)">inurl:</span> — search for keywords in URLs<br>
+            <span style="color:var(--text)">intitle:</span> — search for keywords in page titles<br>
+            <span style="color:var(--text)">intext:</span> — search for keywords in page content<br>
+            <span style="color:var(--text)">ext:</span> — alternative to filetype:<br>
+            <span style="color:var(--text)">"quotes"</span> — exact phrase matching
+          </div>
+          <div style="color:var(--accent);margin-bottom:.3rem">WHAT TO DO IF YOU FIND RESULTS:</div>
+          <div style="color:var(--muted)">
+            1. Document the finding with screenshots<br>
+            2. Remove the exposed file from the web server immediately<br>
+            3. Rotate any credentials or keys that were exposed<br>
+            4. Request Google removal via Search Console<br>
+            5. Check your web server logs to see if the file was accessed<br>
+            6. Review how the file became publicly accessible
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="module" id="mod-report">
   <aside class="sidebar">
     <div class="panel"><div class="panel-label">REPORT CONFIG</div>
@@ -613,6 +734,7 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 </div>
 
 <script>
+document.addEventListener("DOMContentLoaded", function() {
 // ── Shared worker URL helper ──────────────────────────────────────────────────
 function getWorker(mod) {
   const map = { dir:'dir-worker', sub:'sub-worker', port:'port-worker', hdr:'hdr-worker', js:'js-worker', whois:'whois-worker', tech:'tech-worker', s3:'s3-worker' };
@@ -1454,7 +1576,302 @@ function exportReport() {
   if (STATE.tech.length) { t+='TECHNOLOGY STACK\n'+'-'.repeat(40)+'\n'; STATE.tech.forEach(r=>t+=r.name+' | '+r.category+' | '+r.evidence.join(', ')+'\n'); t+='\n'; }
   const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([t],{type:'text/plain'})); a.download='recon_report_'+target.replace(/[^a-z0-9]/gi,'_')+'_'+Date.now()+'.txt'; a.style.display='none'; document.body.appendChild(a); a.click(); setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(a.href);},1000);
 }
+document.querySelectorAll('#dork-cats .wl-item').forEach(item => { item.addEventListener('click', () => { item.classList.toggle('active'); item.querySelector('input').checked=item.classList.contains('active'); }); });
 document.querySelectorAll('#mod-report .wl-item').forEach(item => { item.addEventListener('click', () => { item.classList.toggle('active'); item.querySelector('input').checked=item.classList.contains('active'); }); });
+
+// ════════════════════════════════════════════════════════
+// GOOGLE DORK GENERATOR
+// ════════════════════════════════════════════════════════
+const DORK_LIBRARY = {
+  creds: {
+    label: 'Exposed Credentials & Passwords',
+    icon: '🔑',
+    cls: 'creds',
+    dorks: [
+      { name:'Password Files', desc:'Plain text password files accidentally exposed', query:'site:{domain} filetype:txt intext:"password"', risk:'critical' },
+      { name:'Password in URL', desc:'Credentials passed in URL query strings', query:'site:{domain} inurl:password', risk:'critical' },
+      { name:'.htpasswd Files', desc:'Apache password files containing hashed credentials', query:'site:{domain} filetype:htpasswd', risk:'critical' },
+      { name:'Credential Dumps', desc:'Files containing username and password combinations', query:'site:{domain} filetype:txt "username" "password"', risk:'critical' },
+      { name:'SSH Private Keys', desc:'Exposed SSH private key files', query:'site:{domain} filetype:pem "PRIVATE KEY"', risk:'critical' },
+      { name:'API Keys in Text', desc:'API keys and tokens left in plain text files', query:'site:{domain} filetype:txt "api_key" OR "api_secret" OR "access_token"', risk:'critical' },
+      { name:'AWS Credentials', desc:'Amazon Web Services credential files', query:'site:{domain} filetype:cfg "aws_access_key"', risk:'critical' },
+      { name:'Git Config with Credentials', desc:'.git/config files that may contain auth tokens', query:'site:{domain} inurl:.git/config', risk:'high' },
+      { name:'Password in Log Files', desc:'Log files containing credentials in plaintext', query:'site:{domain} filetype:log "password"', risk:'high' },
+      { name:'Slack Tokens', desc:'Slack API tokens exposed in indexed files', query:'site:{domain} "xoxb-" OR "xoxp-"', risk:'critical' },
+    ]
+  },
+  docs: {
+    label: 'Sensitive Documents',
+    icon: '📄',
+    cls: 'docs',
+    dorks: [
+      { name:'PDF Documents', desc:'All PDF files indexed from this domain', query:'site:{domain} filetype:pdf', risk:'medium' },
+      { name:'Word Documents', desc:'Microsoft Word documents (.doc, .docx)', query:'site:{domain} filetype:doc OR filetype:docx', risk:'medium' },
+      { name:'Excel Spreadsheets', desc:'Excel spreadsheets that may contain sensitive data', query:'site:{domain} filetype:xls OR filetype:xlsx', risk:'medium' },
+      { name:'Internal Memos', desc:'Documents labeled confidential or internal', query:'site:{domain} filetype:pdf "confidential" OR "internal use only"', risk:'high' },
+      { name:'Financial Documents', desc:'Files containing financial data or invoices', query:'site:{domain} filetype:xls "salary" OR "payroll" OR "invoice"', risk:'high' },
+      { name:'Personal Data', desc:'Documents potentially containing PII', query:'site:{domain} filetype:xlsx "date of birth" OR "social security" OR "passport"', risk:'critical' },
+      { name:'Network Diagrams', desc:'Visio or PDF network diagrams exposing infrastructure', query:'site:{domain} filetype:vsd OR "network diagram"', risk:'high' },
+      { name:'PowerPoint Presentations', desc:'Presentations that may reveal internal info', query:'site:{domain} filetype:ppt OR filetype:pptx "internal" OR "confidential"', risk:'medium' },
+      { name:'Text File Dumps', desc:'Raw text files that may contain sensitive data', query:'site:{domain} filetype:txt "username" OR "password" OR "secret"', risk:'high' },
+    ]
+  },
+  config: {
+    label: 'Configuration & Environment Files',
+    icon: '⚙',
+    cls: 'config',
+    dorks: [
+      { name:'.env Files', desc:'Environment files containing credentials and config', query:'site:{domain} filetype:env', risk:'critical' },
+      { name:'Web.config Files', desc:'ASP.NET web configuration files', query:'site:{domain} filetype:config intext:"connectionString"', risk:'critical' },
+      { name:'PHP Config Files', desc:'PHP configuration files with database credentials', query:'site:{domain} filetype:php intext:"db_password" OR "db_user"', risk:'critical' },
+      { name:'YAML Config Files', desc:'YAML configuration files with sensitive settings', query:'site:{domain} filetype:yaml OR filetype:yml "password" OR "secret"', risk:'high' },
+      { name:'JSON Config', desc:'JSON configuration files potentially with credentials', query:'site:{domain} filetype:json "api_key" OR "password" OR "secret"', risk:'high' },
+      { name:'Apache Config', desc:'Apache server configuration files', query:'site:{domain} filetype:conf intext:"Allow from"', risk:'medium' },
+      { name:'Nginx Config', desc:'Nginx configuration files', query:'site:{domain} filetype:conf "nginx" OR "server_name"', risk:'medium' },
+      { name:'Docker Compose', desc:'Docker compose files exposing service configuration', query:'site:{domain} filetype:yml "docker-compose" OR "MYSQL_PASSWORD"', risk:'high' },
+      { name:'WordPress Config', desc:'WordPress configuration files with database credentials', query:'site:{domain} filetype:php "DB_PASSWORD" OR "wp-config"', risk:'critical' },
+      { name:'Properties Files', desc:'Java properties files with credentials', query:'site:{domain} filetype:properties "password" OR "jdbc"', risk:'high' },
+    ]
+  },
+  db: {
+    label: 'Database Files & Backups',
+    icon: '🗄',
+    cls: 'db',
+    dorks: [
+      { name:'SQL Dump Files', desc:'Database dumps that may contain all table data', query:'site:{domain} filetype:sql "INSERT INTO"', risk:'critical' },
+      { name:'SQLite Databases', desc:'SQLite database files accessible via web', query:'site:{domain} filetype:sqlite OR filetype:db', risk:'critical' },
+      { name:'Database Backup Files', desc:'Database backup archives', query:'site:{domain} filetype:sql.gz OR filetype:sql.zip OR inurl:backup.sql', risk:'critical' },
+      { name:'phpMyAdmin Exposed', desc:'phpMyAdmin instances accessible without auth', query:'site:{domain} intitle:"phpMyAdmin" intext:"Welcome to phpMyAdmin"', risk:'critical' },
+      { name:'MongoDB Exposed', desc:'MongoDB admin interfaces exposed', query:'site:{domain} intitle:"MongoDB" intext:"Connect"', risk:'critical' },
+      { name:'Redis Config', desc:'Redis configuration files with auth details', query:'site:{domain} filetype:conf "requirepass" OR "redis"', risk:'high' },
+      { name:'DB Connection Strings', desc:'Files containing database connection strings', query:'site:{domain} intext:"Data Source=" OR "Server=;Database="', risk:'critical' },
+      { name:'CSV Data Exports', desc:'CSV exports that may contain user or business data', query:'site:{domain} filetype:csv "email" OR "phone" OR "address"', risk:'high' },
+      { name:'Backup Archives', desc:'General backup archives on web servers', query:'site:{domain} filetype:zip OR filetype:tar.gz inurl:backup', risk:'high' },
+    ]
+  },
+  login: {
+    label: 'Login Portals & Admin Panels',
+    icon: '🔐',
+    cls: 'login',
+    dorks: [
+      { name:'Admin Login Pages', desc:'Administrative login portals', query:'site:{domain} inurl:admin intitle:"login" OR intitle:"sign in"', risk:'medium' },
+      { name:'cPanel/Plesk', desc:'Web hosting control panels', query:'site:{domain} inurl:2082 OR inurl:2083 OR inurl:2086 OR inurl:8443 intitle:"login"', risk:'medium' },
+      { name:'phpMyAdmin', desc:'Database management interfaces', query:'site:{domain} inurl:phpmyadmin', risk:'high' },
+      { name:'Webmail Portals', desc:'Webmail login pages', query:'site:{domain} inurl:webmail OR intitle:"Outlook Web App"', risk:'medium' },
+      { name:'VPN Login', desc:'VPN and remote access portals', query:'site:{domain} intitle:"VPN" intext:"login" OR inurl:vpn', risk:'medium' },
+      { name:'Remote Desktop', desc:'Remote desktop gateway login pages', query:'site:{domain} intitle:"Remote Desktop" OR intitle:"RDWeb"', risk:'high' },
+      { name:'Jenkins CI', desc:'Jenkins CI/CD build server login', query:'site:{domain} intitle:"Dashboard [Jenkins]"', risk:'high' },
+      { name:'Jira/Confluence', desc:'Atlassian project management portals', query:'site:{domain} intitle:"Log In - Jira" OR intitle:"Log In - Confluence"', risk:'medium' },
+      { name:'WordPress Admin', desc:'WordPress admin login pages', query:'site:{domain} inurl:wp-admin OR inurl:wp-login.php', risk:'medium' },
+      { name:'Exposed Kibana', desc:'Kibana dashboards with no authentication', query:'site:{domain} intitle:"Kibana" inurl:5601', risk:'critical' },
+    ]
+  },
+  camera: {
+    label: 'Cameras & IoT Devices',
+    icon: '📷',
+    cls: 'camera',
+    dorks: [
+      { name:'Live Camera Feeds', desc:'Publicly accessible IP camera streams', query:'site:{domain} inurl:view.shtml "Network Camera"', risk:'high' },
+      { name:'Webcam Interfaces', desc:'Web-accessible camera management pages', query:'site:{domain} intitle:"webcam" OR intitle:"IP Camera" intext:"Live View"', risk:'high' },
+      { name:'Network Camera Login', desc:'Network camera login pages exposed to internet', query:'site:{domain} intitle:"Network Video Recorder" OR intitle:"DVR Login"', risk:'high' },
+      { name:'Printer Interfaces', desc:'Network printer management interfaces', query:'site:{domain} intitle:"HP LaserJet" OR intitle:"Printer Status"', risk:'medium' },
+      { name:'Router Admin Panels', desc:'Network device admin interfaces', query:'site:{domain} intitle:"Router" intext:"Firmware Version"', risk:'high' },
+      { name:'SCADA/ICS Systems', desc:'Industrial control system interfaces', query:'site:{domain} intitle:"SCADA" OR intitle:"HMI" intext:"Control Panel"', risk:'critical' },
+      { name:'Building Management', desc:'Building management and automation systems', query:'site:{domain} intitle:"Building Automation" OR intitle:"BMS Login"', risk:'high' },
+    ]
+  },
+  vulns: {
+    label: 'Vulnerable Software Versions',
+    icon: '🐛',
+    cls: 'vulns',
+    dorks: [
+      { name:'Outdated WordPress', desc:'WordPress installations with version exposed', query:'site:{domain} intext:"WordPress" "Powered by WordPress" intitle:"WordPress"', risk:'medium' },
+      { name:'Old Apache Versions', desc:'Apache servers exposing version information', query:'site:{domain} intitle:"Apache" "Apache/2.2" OR "Apache/2.0"', risk:'high' },
+      { name:'PHP Version Exposed', desc:'Pages disclosing PHP version information', query:'site:{domain} intext:"PHP Version" intitle:"phpinfo()"', risk:'high' },
+      { name:'Exposed phpinfo()', desc:'phpinfo() pages revealing full server configuration', query:'site:{domain} intitle:"phpinfo()" intext:"PHP Version"', risk:'high' },
+      { name:'Old IIS Versions', desc:'Microsoft IIS servers with version disclosed', query:'site:{domain} intitle:"IIS Windows Server" "IIS 6.0" OR "IIS 7.0"', risk:'high' },
+      { name:'Exposed Swagger UI', desc:'API documentation with live endpoint testing', query:'site:{domain} intitle:"Swagger UI"', risk:'medium' },
+      { name:'Spring Boot Actuator', desc:'Spring Boot actuator endpoints exposing app internals', query:'site:{domain} inurl:actuator intext:"health" OR intext:"env"', risk:'high' },
+      { name:'Error Pages Leaking Stack Traces', desc:'Error pages revealing technology and file paths', query:'site:{domain} intitle:"Error" intext:"stack trace" OR intext:"Exception"', risk:'medium' },
+      { name:'Directory Listings', desc:'Web server directory browsing enabled', query:'site:{domain} intitle:"Index of /" intext:"Parent Directory"', risk:'high' },
+      { name:'Server Status Pages', desc:'Apache/nginx server-status pages exposed', query:'site:{domain} inurl:server-status intitle:"Apache Status"', risk:'high' },
+    ]
+  },
+  email: {
+    label: 'Email Addresses & Employee Info',
+    icon: '📧',
+    cls: 'email',
+    dorks: [
+      { name:'Email Addresses', desc:'Pages containing @domain.com email addresses', query:'site:{domain} intext:"@{domain}"', risk:'medium' },
+      { name:'Staff Directory', desc:'Employee directories and contact pages', query:'site:{domain} intitle:"staff" OR intitle:"directory" OR intitle:"team"', risk:'medium' },
+      { name:'Employee LinkedIn References', desc:'Pages referencing LinkedIn profiles of employees', query:'site:{domain} intext:"linkedin.com/in/"', risk:'low' },
+      { name:'Contact Pages with PII', desc:'Contact pages listing employee names and numbers', query:'site:{domain} intitle:"contact" intext:"phone" OR intext:"mobile"', risk:'medium' },
+      { name:'Email in PDFs', desc:'PDF documents containing email addresses', query:'site:{domain} filetype:pdf intext:"@{domain}"', risk:'medium' },
+      { name:'Email in Spreadsheets', desc:'Spreadsheets containing employee email lists', query:'site:{domain} filetype:xlsx OR filetype:csv intext:"@{domain}"', risk:'high' },
+      { name:'Org Chart Documents', desc:'Organizational charts exposing company structure', query:'site:{domain} filetype:pdf "org chart" OR "organizational chart"', risk:'medium' },
+      { name:'HR Documents', desc:'HR documents that may contain employee information', query:'site:{domain} filetype:pdf "employee" "confidential" OR "HR"', risk:'high' },
+      { name:'Resume/CV Files', desc:'Employee resumes accidentally published', query:'site:{domain} filetype:pdf "resume" OR "curriculum vitae"', risk:'low' },
+    ]
+  }
+};
+
+function generateDorks() {
+  const domain = document.getElementById('dork-target').value.trim().replace(/^https?:\/\//,'').replace(/\/.*/,'');
+  if (!domain) { alert('Enter a target domain first'); return; }
+  const selected = [...document.querySelectorAll('#dork-cats .wl-item.active input')].map(i=>i.value);
+  if (!selected.length) { alert('Select at least one category'); return; }
+
+  let totalDorks = 0;
+  let allQueriesFlat = [];
+  const categoryHTML = selected.map(cat => {
+    const data = DORK_LIBRARY[cat];
+    if (!data) return '';
+    const dorks = data.dorks;
+    totalDorks += dorks.length;
+    const dorksHTML = dorks.map(d => {
+      const query = d.query.replace(/\{domain\}/g, domain);
+      const googleUrl = 'https://www.google.com/search?q=' + encodeURIComponent(query);
+      allQueriesFlat.push({ cat: data.label, name: d.name, query, risk: d.risk });
+      return `<div class="dork-item">
+        <div class="dork-item-left">
+          <div class="dork-name">${d.name}</div>
+          <div class="dork-desc">${d.desc}</div>
+          <div class="dork-query">${query}</div>
+        </div>
+        <span class="dork-risk ${d.risk}">${d.risk.toUpperCase()}</span>
+        <div style="display:flex;flex-direction:column;gap:.3rem">
+          <a class="dork-btn google" href="${googleUrl}" target="_blank" rel="noopener">🔍 GOOGLE</a>
+          <button class="dork-btn copy" onclick="copyDork('${query.replace(/'/g,"\'")}')">📋 COPY</button>
+        </div>
+      </div>`;
+    }).join('');
+    return `<div class="dork-category ${cat}">
+      <div class="dork-cat-header" onclick="toggleDorkCat(this)">
+        <div class="dork-cat-title">${data.icon} ${data.label}</div>
+        <div style="display:flex;align-items:center;gap:.75rem">
+          <span class="dork-cat-count">${dorks.length} QUERIES</span>
+          <span class="dork-cat-toggle">▼ EXPAND</span>
+        </div>
+      </div>
+      <div class="dork-cat-body">${dorksHTML}</div>
+    </div>`;
+  }).join('');
+
+  const critCount = allQueriesFlat.filter(d=>d.risk==='critical').length;
+  const highCount = allQueriesFlat.filter(d=>d.risk==='high').length;
+  const medCount  = allQueriesFlat.filter(d=>d.risk==='medium').length;
+
+  const summaryHTML = `<div class="dork-summary">
+    <div class="dork-sum-box"><div class="dork-sum-num" style="color:var(--text)">${totalDorks}</div><div class="dork-sum-lbl">TOTAL QUERIES</div></div>
+    <div class="dork-sum-box"><div class="dork-sum-num" style="color:var(--danger)">${critCount}</div><div class="dork-sum-lbl">CRITICAL</div></div>
+    <div class="dork-sum-box"><div class="dork-sum-num" style="color:var(--warn)">${highCount}</div><div class="dork-sum-lbl">HIGH</div></div>
+    <div class="dork-sum-box"><div class="dork-sum-num" style="color:var(--info)">${medCount}</div><div class="dork-sum-lbl">MEDIUM</div></div>
+    <div class="dork-sum-box"><div class="dork-sum-num" style="color:var(--accent)">${selected.length}</div><div class="dork-sum-lbl">CATEGORIES</div></div>
+  </div>
+  <div style="display:flex;gap:.5rem;margin-bottom:1rem;flex-wrap:wrap">
+    <button class="dork-all-btn" onclick="expandAllDorks()">▼ EXPAND ALL</button>
+    <button class="dork-all-btn" onclick="collapseAllDorks()">▲ COLLAPSE ALL</button>
+    <button class="dork-all-btn" onclick="openAllGoogle('${domain}')" style="color:var(--info);border-color:rgba(0,180,216,.3)">🔍 OPEN ALL IN GOOGLE</button>
+    <button class="dork-all-btn" onclick="exportDorks()" style="margin-left:auto">⬇ EXPORT LIST</button>
+  </div>`;
+
+  document.getElementById('dork-output').innerHTML = summaryHTML + '<div class="dork-grid">' + categoryHTML + '</div>';
+  document.getElementById('dork-b-results').textContent = totalDorks;
+  document.getElementById('dork-b-all').textContent = totalDorks;
+
+  // Flat list tab
+  const flatHTML = '<div style="margin-bottom:.75rem;display:flex;justify-content:space-between;align-items:center">' +
+    '<div style="font-family:'Share Tech Mono',monospace;font-size:.62rem;color:var(--muted)">'+totalDorks+' queries for '+domain+'</div>' +
+    '<button class="dork-all-btn" onclick="copyAllDorks()">📋 COPY ALL</button>' +
+    '</div>' +
+    allQueriesFlat.map(d=>`
+    <div class="result-row sev-${d.risk==='critical'?'critical':d.risk==='high'?'high':d.risk==='medium'?'medium':'low'}" style="grid-template-columns:1fr auto auto;gap:.5rem;margin-bottom:2px">
+      <div>
+        <div style="font-size:.72rem;color:var(--heading);margin-bottom:.15rem">${d.name} <span style="color:var(--muted);font-size:.6rem">— ${d.cat}</span></div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:.62rem;color:var(--accent)">${d.query}</div>
+      </div>
+      <span class="dork-risk ${d.risk}">${d.risk.toUpperCase()}</span>
+      <a class="dork-btn google" href="https://www.google.com/search?q=${encodeURIComponent(d.query)}" target="_blank" rel="noopener">🔍</a>
+    </div>`).join('');
+  document.getElementById('dork-all-output').innerHTML = flatHTML;
+
+  // Store for export
+  window._dorkData = { domain, queries: allQueriesFlat };
+  setStatus('DORKS GENERATED — '+totalDorks+' queries for '+domain, 'done');
+}
+
+function toggleDorkCat(header) {
+  const body = header.nextElementSibling;
+  const toggle = header.querySelector('.dork-cat-toggle');
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open');
+  header.classList.toggle('open');
+  toggle.textContent = isOpen ? '▼ EXPAND' : '▲ COLLAPSE';
+}
+
+function expandAllDorks() {
+  document.querySelectorAll('.dork-cat-body').forEach(b=>b.classList.add('open'));
+  document.querySelectorAll('.dork-cat-header').forEach(h=>h.classList.add('open'));
+  document.querySelectorAll('.dork-cat-toggle').forEach(t=>t.textContent='▲ COLLAPSE');
+}
+
+function collapseAllDorks() {
+  document.querySelectorAll('.dork-cat-body').forEach(b=>b.classList.remove('open'));
+  document.querySelectorAll('.dork-cat-header').forEach(h=>h.classList.remove('open'));
+  document.querySelectorAll('.dork-cat-toggle').forEach(t=>t.textContent='▼ EXPAND');
+}
+
+function copyDork(query) {
+  navigator.clipboard.writeText(query).then(() => showToast('Query copied!')).catch(()=>{});
+}
+
+function copyAllDorks() {
+  if (!window._dorkData) return;
+  const text = window._dorkData.queries.map(d=>d.query).join('\n');
+  navigator.clipboard.writeText(text).then(()=>showToast('All '+window._dorkData.queries.length+' queries copied!')).catch(()=>{});
+}
+
+function openAllGoogle(domain) {
+  if (!window._dorkData) return;
+  // Open top 10 critical/high only to avoid overwhelming browser
+  const topQueries = window._dorkData.queries.filter(d=>d.risk==='critical'||d.risk==='high').slice(0,10);
+  if (!topQueries.length) { showToast('No critical/high queries found'); return; }
+  topQueries.forEach((d,i) => {
+    setTimeout(() => { window.open('https://www.google.com/search?q='+encodeURIComponent(d.query),'_blank'); }, i*300);
+  });
+  showToast('Opening '+topQueries.length+' critical/high queries in Google...');
+}
+
+function exportDorks() {
+  if (!window._dorkData) return;
+  const { domain, queries } = window._dorkData;
+  let t = 'WELCHSEC GOOGLE DORK REPORT\n';
+  t += 'Target: '+domain+'\nGenerated: '+new Date().toISOString().slice(0,10)+'\n';
+  t += '='.repeat(60)+'\n\n';
+  const byCat = {};
+  queries.forEach(q=>{ if(!byCat[q.cat]) byCat[q.cat]=[]; byCat[q.cat].push(q); });
+  Object.entries(byCat).forEach(([cat,qs])=>{
+    t += cat.toUpperCase()+'\n'+'-'.repeat(40)+'\n';
+    qs.forEach(q=>t+=q.risk.toUpperCase()+' | '+q.name+'\n'+q.query+'\nhttps://www.google.com/search?q='+encodeURIComponent(q.query)+'\n\n');
+  });
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([t],{type:'text/plain'}));
+  a.download='dorks_'+domain.replace(/\./g,'_')+'_'+Date.now()+'.txt';
+  a.style.display='none';
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(a.href);},1000);
+}
+
+function showToast(msg) {
+  let toast = document.getElementById('copyToast');
+  if (!toast) { toast=document.createElement('div'); toast.id='copyToast'; toast.className='copy-toast'; document.body.appendChild(toast); }
+  toast.textContent = msg;
+  toast.style.display='block';
+  setTimeout(()=>{ toast.style.display='none'; }, 2000);
+}
+
+});
+
 </script>
 </body>
 </html>
