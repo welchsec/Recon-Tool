@@ -208,6 +208,12 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 </style>
 </head>
 <body>
+<script>
+// Global stubs defined immediately so onclick handlers work before main script loads
+// Real implementations are defined below and override these automatically
+function switchMod(n){var el=document.getElementById('mod-'+n);if(el){document.querySelectorAll('.module').forEach(function(m){m.classList.remove('active');});document.querySelectorAll('.mod-tab').forEach(function(t){t.classList.remove('active');});el.classList.add('active');var tab=document.getElementById('mt-'+n);if(tab)tab.classList.add('active');}}
+function switchTab(p,n){document.querySelectorAll('[id^="'+p+'-tab-"]').forEach(function(t){t.classList.remove('active');});document.querySelectorAll('[id^="'+p+'-panel-"]').forEach(function(t){t.classList.remove('active');});var tab=document.getElementById(p+'-tab-'+n);var panel=document.getElementById(p+'-panel-'+n);if(tab)tab.classList.add('active');if(panel)panel.classList.add('active');}
+</script>
 <div class="topbar">
   <div class="brand">Welch<span>Sec</span> // Recon Suite</div>
   <div class="topbar-right">
@@ -734,7 +740,6 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 </div>
 
 <script>
-document.addEventListener("DOMContentLoaded", function() {
 // ── Shared worker URL helper ──────────────────────────────────────────────────
 function getWorker(mod) {
   const map = { dir:'dir-worker', sub:'sub-worker', port:'port-worker', hdr:'hdr-worker', js:'js-worker', whois:'whois-worker', tech:'tech-worker', s3:'s3-worker' };
@@ -1869,8 +1874,6 @@ function showToast(msg) {
   toast.style.display='block';
   setTimeout(()=>{ toast.style.display='none'; }, 2000);
 }
-
-});
 
 </script>
 </body>
