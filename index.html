@@ -1253,14 +1253,14 @@ function generateDorks() {
 
   // Flat list tab
   const flatHTML = '<div style="margin-bottom:.75rem;display:flex;justify-content:space-between;align-items:center">' +
-    '<div style="font-family:'Share Tech Mono',monospace;font-size:.62rem;color:var(--muted)">'+totalDorks+' queries for '+domain+'</div>' +
+    '<div style="font-family:monospace,monospace;font-size:.62rem;color:var(--muted)">'+totalDorks+' queries for '+domain+'</div>' +
     '<button class="dork-all-btn" onclick="copyAllDorks()">📋 COPY ALL</button>' +
     '</div>' +
     allQueriesFlat.map(d=>`
     <div class="result-row sev-${d.risk==='critical'?'critical':d.risk==='high'?'high':d.risk==='medium'?'medium':'low'}" style="grid-template-columns:1fr auto auto;gap:.5rem;margin-bottom:2px">
       <div>
         <div style="font-size:.72rem;color:var(--heading);margin-bottom:.15rem">${d.name} <span style="color:var(--muted);font-size:.6rem">— ${d.cat}</span></div>
-        <div style="font-family:'Share Tech Mono',monospace;font-size:.62rem;color:var(--accent)">${d.query}</div>
+        <div style="font-family:monospace,monospace;font-size:.62rem;color:var(--accent)">${d.query}</div>
       </div>
       <span class="dork-risk ${d.risk}">${d.risk.toUpperCase()}</span>
       <a class="dork-btn google" href="https://www.google.com/search?q=${encodeURIComponent(d.query)}" target="_blank" rel="noopener">🔍</a>
@@ -1671,7 +1671,7 @@ function showToast(msg) {
     </div>
     <button class="scan-btn" id="whois-btn" onclick="startWhoisScan()">▶ LOOKUP</button>
     <div class="panel"><div class="panel-label">QUICK STATS</div>
-      <div id="whois-stats" style="font-family:'Share Tech Mono',monospace;font-size:.6rem;color:var(--muted);line-height:2;">No data yet</div>
+      <div id="whois-stats" style="font-family:monospace,monospace;font-size:.6rem;color:var(--muted);line-height:2;">No data yet</div>
     </div>
   </aside>
   <div class="main">
@@ -1809,7 +1809,7 @@ function showToast(msg) {
         </div>
       </div>
       <div class="tab-panel" id="dork-panel-guide">
-        <div style="font-family:'Share Tech Mono',monospace;font-size:.7rem;line-height:2;color:var(--text);padding:.5rem">
+        <div style="font-family:monospace,monospace;font-size:.7rem;line-height:2;color:var(--text);padding:.5rem">
           <div style="color:var(--accent);font-size:.8rem;margin-bottom:.75rem;font-family:'Rajdhani',sans-serif;font-weight:700;text-transform:uppercase">HOW GOOGLE DORKING WORKS</div>
           <div style="color:var(--muted);margin-bottom:1rem">Google indexes publicly accessible web content. If sensitive files are accidentally exposed on a web server, Google may index them and they become searchable. Dorking uses advanced search operators to find this data.</div>
           <div style="color:var(--accent);margin-bottom:.3rem">COMMON OPERATORS:</div>
