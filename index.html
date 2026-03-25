@@ -206,540 +206,7 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
   .copy-toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--accent);color:var(--bg);font-family:'Share Tech Mono',monospace;font-size:.7rem;padding:.5rem 1rem;z-index:1000;display:none;letter-spacing:.08em;}
 
 </style>
-</head>
-<body>
-<script>
-// Global stubs defined immediately so onclick handlers work before main script loads
-// Real implementations are defined below and override these automatically
-function switchMod(n){var el=document.getElementById('mod-'+n);if(el){document.querySelectorAll('.module').forEach(function(m){m.classList.remove('active');});document.querySelectorAll('.mod-tab').forEach(function(t){t.classList.remove('active');});el.classList.add('active');var tab=document.getElementById('mt-'+n);if(tab)tab.classList.add('active');}}
-function switchTab(p,n){document.querySelectorAll('[id^="'+p+'-tab-"]').forEach(function(t){t.classList.remove('active');});document.querySelectorAll('[id^="'+p+'-panel-"]').forEach(function(t){t.classList.remove('active');});var tab=document.getElementById(p+'-tab-'+n);var panel=document.getElementById(p+'-panel-'+n);if(tab)tab.classList.add('active');if(panel)panel.classList.add('active');}
-</script>
-<div class="topbar">
-  <div class="brand">Welch<span>Sec</span> // Recon Suite</div>
-  <div class="topbar-right">
-    <div class="status-led" id="statusLed"></div>
-    <span id="statusText">IDLE</span>
-    <span style="color:var(--border)">|</span>
-    <a href="https://welchsec.github.io/TTP-Threat-Report/" target="_blank">TTP ↗</a>
-    <a href="https://welchsec.github.io/Intrusion-Report/" target="_blank">INTRUSION ↗</a>
-  </div>
-</div>
-
-<div class="module-bar">
-  <div class="mod-tab active" onclick="switchMod('dir')" id="mt-dir">🔍 DIR SCAN</div>
-  <div class="mod-tab" onclick="switchMod('sub')" id="mt-sub">🌐 SUBDOMAINS</div>
-  <div class="mod-tab" onclick="switchMod('port')" id="mt-port">🔌 PORT SCAN</div>
-  <div class="mod-tab" onclick="switchMod('hdr')" id="mt-hdr">🛡 HEADERS</div>
-  <div class="mod-tab" onclick="switchMod('js')" id="mt-js">📜 JS ANALYZER</div>
-  <div class="mod-tab" onclick="switchMod('whois')" id="mt-whois">🌍 WHOIS/DNS</div>
-  <div class="mod-tab" onclick="switchMod('tech')" id="mt-tech">🖥 TECH SCAN</div>
-  <div class="mod-tab" onclick="switchMod('s3')" id="mt-s3">☁ S3 BUCKETS</div>
-  <div class="mod-tab" onclick="switchMod('dork')" id="mt-dork">🔎 GOOGLE DORKS</div>
-  <div class="mod-tab" onclick="switchMod('report')" id="mt-report">📄 REPORT</div>
-</div>
-
-<!-- ═══════════════════ MODULE: DIR SCAN ═══════════════════ -->
-<div class="module active" id="mod-dir">
-  <aside class="sidebar">
-    <div class="panel"><div class="panel-label">TARGET</div>
-      <div class="field"><label>URL</label><input type="text" id="dir-target" placeholder="https://example.com"></div>
-      <div class="field"><label>WORKER URL</label><input type="text" id="dir-worker" placeholder="https://your-worker.workers.dev"></div>
-    </div>
-    <div class="panel"><div class="panel-label">CONFIG</div>
-      <div class="field"><label>CONCURRENCY</label><select id="dir-con"><option value="3">3 — Stealth</option><option value="5" selected>5 — Balanced</option><option value="10">10 — Aggressive</option><option value="20">20 — Max</option></select></div>
-      <div class="field"><label>DELAY (ms)</label><select id="dir-delay"><option value="0">0ms</option><option value="200" selected>200ms</option><option value="500">500ms</option><option value="1000">1s</option></select></div>
-      <div class="field"><label>SHOW</label><select id="dir-mode"><option value="interesting" selected>Interesting</option><option value="all">All (no 404)</option><option value="200only">200 Only</option></select></div>
-    </div>
-    <div class="panel"><div class="panel-label">WORDLISTS</div>
-      <div class="wl-grid" id="dir-wlg">
-        <label class="wl-item active"><input type="checkbox" value="admin" checked>ADMIN</label>
-        <label class="wl-item active"><input type="checkbox" value="backups" checked>BACKUPS</label>
-        <label class="wl-item active"><input type="checkbox" value="config" checked>CONFIG</label>
-        <label class="wl-item active"><input type="checkbox" value="api" checked>API</label>
-        <label class="wl-item"><input type="checkbox" value="vcs">VCS</label>
-        <label class="wl-item"><input type="checkbox" value="logs">LOGS</label>
-        <label class="wl-item"><input type="checkbox" value="database">DATABASE</label>
-        <label class="wl-item"><input type="checkbox" value="uploads">UPLOADS</label>
-        <label class="wl-item"><input type="checkbox" value="wordpress">WORDPRESS</label>
-        <label class="wl-item"><input type="checkbox" value="debug">DEBUG</label>
-        <label class="wl-item"><input type="checkbox" value="cloud">CLOUD META</label>
-        <label class="wl-item"><input type="checkbox" value="cve">CVE PATHS</label>
-      </div>
-    </div>
-    <button class="scan-btn" id="dir-btn" onclick="startDirScan()">▶ SCAN</button>
-    <button class="stop-btn" id="dir-stop" onclick="dirStop=true">■ STOP</button>
-    <div class="panel"><div class="panel-label">STATS</div>
-      <div class="stats-grid">
-        <div class="stat-box"><div class="stat-num" id="ds-checked" style="color:var(--info)">0</div><div class="stat-label">CHECKED</div></div>
-        <div class="stat-box"><div class="stat-num" id="ds-found" style="color:var(--accent)">0</div><div class="stat-label">FOUND</div></div>
-        <div class="stat-box"><div class="stat-num" id="ds-crit" style="color:var(--danger)">0</div><div class="stat-label">CRITICAL</div></div>
-        <div class="stat-box"><div class="stat-num" id="ds-err" style="color:var(--muted)">0</div><div class="stat-label">ERRORS</div></div>
-      </div>
-      <div class="progress-wrap"><div class="progress-bar" id="ds-prog"></div></div>
-      <div class="progress-label" id="ds-progl">0 / 0</div>
-    </div>
-  </aside>
-  <div class="main">
-    <div class="tabs">
-      <div class="tab active" onclick="switchTab('dir','findings')" id="dir-tab-findings">FINDINGS <span class="badge" id="dir-b-findings">0</span></div>
-      <div class="tab" onclick="switchTab('dir','critical')" id="dir-tab-critical">CRITICAL <span class="badge" id="dir-b-critical">0</span></div>
-      <div class="tab" onclick="switchTab('dir','all')" id="dir-tab-all">ALL <span class="badge" id="dir-b-all">0</span></div>
-      <div class="tab" onclick="switchTab('dir','log')" id="dir-tab-log">LOG</div>
-    </div>
-    <div class="results-area">
-      <div class="disclaimer">⚠ Only scan targets you own or have explicit written permission to test.</div>
-      <div class="tab-panel active" id="dir-panel-findings">
-        <div class="summary-row" id="dir-sumrow" style="display:none">
-          <div class="summary-card"><div>💀</div><div><div class="sum-num" style="color:var(--danger)" id="dir-s-crit">0</div><div class="sum-lbl">CRITICAL</div></div></div>
-          <div class="summary-card"><div>🟠</div><div><div class="sum-num" style="color:var(--warn)" id="dir-s-high">0</div><div class="sum-lbl">HIGH</div></div></div>
-          <div class="summary-card"><div>🟡</div><div><div class="sum-num" style="color:var(--info)" id="dir-s-med">0</div><div class="sum-lbl">MEDIUM</div></div></div>
-          <div class="summary-card"><div>✅</div><div><div class="sum-num" style="color:var(--accent)" id="dir-s-tot">0</div><div class="sum-lbl">TOTAL</div></div></div>
-        </div>
-        <div class="filter-bar" id="dir-fb" style="display:none">
-          <input class="filter-input" placeholder="Filter paths..." oninput="dirFilter(this.value)">
-          <button class="filter-btn on" onclick="dirSF('all',this)">ALL</button>
-          <button class="filter-btn" onclick="dirSF('200',this)">200</button>
-          <button class="filter-btn" onclick="dirSF('403',this)">403</button>
-          <button class="filter-btn" onclick="dirSF('401',this)">401</button>
-          <button class="filter-btn" onclick="dirSF('500',this)">500</button>
-          <button class="filter-btn" onclick="dirExport()" style="margin-left:auto">⬇ CSV</button>
-        </div>
-        <div class="col-header" id="dir-ch" style="display:none;grid-template-columns:55px 1fr auto auto"><span>STATUS</span><span>PATH</span><span>SIZE</span><span>SEV</span></div>
-        <div id="dir-findings-c"><div class="placeholder"><div class="placeholder-icon">🔍</div><div class="placeholder-text">ENTER TARGET AND SELECT WORDLISTS</div></div></div>
-      </div>
-      <div class="tab-panel" id="dir-panel-critical"><div id="dir-crit-c"><div class="placeholder"><div class="placeholder-icon">🚨</div><div class="placeholder-text">CRITICAL FINDINGS APPEAR HERE</div></div></div></div>
-      <div class="tab-panel" id="dir-panel-all">
-        <div class="col-header" style="grid-template-columns:55px 1fr auto auto"><span>STATUS</span><span>PATH</span><span>SIZE</span><span>SEV</span></div>
-        <div id="dir-all-c"></div>
-      </div>
-      <div class="tab-panel" id="dir-panel-log"><div class="log-stream" id="dir-log"></div></div>
-    </div>
-  </div>
-</div>
-
-<!-- ═══════════════════ MODULE: SUBDOMAINS ═══════════════════ -->
-<div class="module" id="mod-sub">
-  <aside class="sidebar">
-    <div class="panel"><div class="panel-label">TARGET</div>
-      <div class="field"><label>ROOT DOMAIN</label><input type="text" id="sub-target" placeholder="example.com"></div>
-      <div class="field"><label>WORKER URL</label><input type="text" id="sub-worker" placeholder="https://your-worker.workers.dev"></div>
-    </div>
-    <div class="panel"><div class="panel-label">SOURCES</div>
-      <div class="wl-grid">
-        <label class="wl-item active"><input type="checkbox" id="use-crt" checked>crt.sh</label>
-        <label class="wl-item active"><input type="checkbox" id="use-ht" checked>HackerTarget</label>
-        <label class="wl-item active"><input type="checkbox" id="use-brute" checked>DNS BRUTE</label>
-        <label class="wl-item"><input type="checkbox" id="use-otx">AlienVault</label>
-      </div>
-    </div>
-    <div class="panel"><div class="panel-label">BRUTE CONFIG</div>
-      <div class="field"><label>WORDLIST</label><select id="sub-size"><option value="small">Small (~50)</option><option value="medium" selected>Medium (~150)</option><option value="large">Large (~400)</option></select></div>
-      <div class="field"><label>CONCURRENCY</label><select id="sub-con"><option value="5">5</option><option value="10" selected>10</option><option value="20">20</option></select></div>
-    </div>
-    <button class="scan-btn" id="sub-btn" onclick="startSubScan()">▶ ENUMERATE</button>
-    <button class="stop-btn" id="sub-stop" onclick="subStop=true">■ STOP</button>
-    <div class="panel"><div class="panel-label">STATS</div>
-      <div class="stats-grid">
-        <div class="stat-box"><div class="stat-num" id="ss-found" style="color:var(--accent)">0</div><div class="stat-label">FOUND</div></div>
-        <div class="stat-box"><div class="stat-num" id="ss-live" style="color:var(--accent)">0</div><div class="stat-label">LIVE</div></div>
-        <div class="stat-box"><div class="stat-num" id="ss-checked" style="color:var(--info)">0</div><div class="stat-label">CHECKED</div></div>
-        <div class="stat-box"><div class="stat-num" id="ss-src" style="color:var(--muted)">0</div><div class="stat-label">SOURCES</div></div>
-      </div>
-      <div class="progress-wrap"><div class="progress-bar" id="ss-prog"></div></div>
-      <div class="progress-label" id="ss-progl">Waiting...</div>
-    </div>
-  </aside>
-  <div class="main">
-    <div class="tabs">
-      <div class="tab active" onclick="switchTab('sub','results')" id="sub-tab-results">SUBDOMAINS <span class="badge" id="sub-b-results">0</span></div>
-      <div class="tab" onclick="switchTab('sub','live')" id="sub-tab-live">LIVE <span class="badge" id="sub-b-live">0</span></div>
-      <div class="tab" onclick="switchTab('sub','log')" id="sub-tab-log">LOG</div>
-    </div>
-    <div class="results-area">
-      <div class="disclaimer">⚠ Only enumerate domains you own or have permission to test.</div>
-      <div class="tab-panel active" id="sub-panel-results">
-        <div class="summary-row" id="sub-sumrow" style="display:none">
-          <div class="summary-card"><div>🌐</div><div><div class="sum-num" style="color:var(--accent)" id="sub-s-tot">0</div><div class="sum-lbl">TOTAL</div></div></div>
-          <div class="summary-card"><div>✅</div><div><div class="sum-num" style="color:var(--accent)" id="sub-s-live">0</div><div class="sum-lbl">LIVE</div></div></div>
-          <div class="summary-card"><div>🔒</div><div><div class="sum-num" style="color:var(--info)" id="sub-s-crt">0</div><div class="sum-lbl">crt.sh</div></div></div>
-          <div class="summary-card"><div>💥</div><div><div class="sum-num" style="color:var(--purple)" id="sub-s-brute">0</div><div class="sum-lbl">BRUTE</div></div></div>
-        </div>
-        <div class="filter-bar" id="sub-fb" style="display:none">
-          <input class="filter-input" placeholder="Filter subdomains..." oninput="subFilter(this.value)">
-          <button class="filter-btn on" onclick="subSF('all',this)">ALL</button>
-          <button class="filter-btn" onclick="subSF('live',this)">LIVE</button>
-          <button class="filter-btn" onclick="subSF('crt',this)">crt.sh</button>
-          <button class="filter-btn" onclick="subSF('brute',this)">BRUTE</button>
-          <button class="filter-btn" onclick="subExport()" style="margin-left:auto">⬇ CSV</button>
-        </div>
-        <div class="col-header" id="sub-ch" style="display:none;grid-template-columns:1fr 120px 90px auto"><span>SUBDOMAIN</span><span>IP</span><span>SOURCE</span><span>STATUS</span></div>
-        <div id="sub-results-c"><div class="placeholder"><div class="placeholder-icon">🌐</div><div class="placeholder-text">ENTER ROOT DOMAIN AND CLICK ENUMERATE</div></div></div>
-      </div>
-      <div class="tab-panel" id="sub-panel-live">
-        <div class="col-header" style="grid-template-columns:1fr 120px 90px auto"><span>SUBDOMAIN</span><span>IP</span><span>SOURCE</span><span>STATUS</span></div>
-        <div id="sub-live-c"></div>
-      </div>
-      <div class="tab-panel" id="sub-panel-log"><div class="log-stream" id="sub-log"></div></div>
-    </div>
-  </div>
-</div>
-
-<!-- ═══════════════════ MODULE: PORT SCAN ═══════════════════ -->
-<div class="module" id="mod-port">
-  <aside class="sidebar">
-    <div class="panel"><div class="panel-label">TARGET</div>
-      <div class="field"><label>HOST / IP</label><input type="text" id="port-target" placeholder="example.com or 1.2.3.4"></div>
-      <div class="field"><label>WORKER URL</label><input type="text" id="port-worker" placeholder="https://your-worker.workers.dev"></div>
-    </div>
-    <div class="panel"><div class="panel-label">PORT SELECTION</div>
-      <div class="wl-grid">
-        <label class="wl-item active"><input type="checkbox" value="common" checked>COMMON</label>
-        <label class="wl-item active"><input type="checkbox" value="web" checked>WEB</label>
-        <label class="wl-item"><input type="checkbox" value="db">DATABASES</label>
-        <label class="wl-item"><input type="checkbox" value="remote">REMOTE ACCESS</label>
-        <label class="wl-item"><input type="checkbox" value="mail">MAIL</label>
-        <label class="wl-item"><input type="checkbox" value="devops">DEVOPS</label>
-      </div>
-    </div>
-    <div class="panel"><div class="panel-label">CUSTOM PORTS</div>
-      <div class="field"><label>ADDITIONAL PORTS (comma separated)</label><input type="text" id="port-custom" placeholder="8080,8443,9000"></div>
-    </div>
-    <button class="scan-btn" id="port-btn" onclick="startPortScan()">▶ SCAN PORTS</button>
-    <div class="panel"><div class="panel-label">STATS</div>
-      <div class="stats-grid">
-        <div class="stat-box"><div class="stat-num" id="ps-open" style="color:var(--accent)">0</div><div class="stat-label">OPEN</div></div>
-        <div class="stat-box"><div class="stat-num" id="ps-crit" style="color:var(--danger)">0</div><div class="stat-label">CRITICAL</div></div>
-        <div class="stat-box"><div class="stat-num" id="ps-high" style="color:var(--warn)">0</div><div class="stat-label">HIGH RISK</div></div>
-        <div class="stat-box"><div class="stat-num" id="ps-total" style="color:var(--muted)">0</div><div class="stat-label">SCANNED</div></div>
-      </div>
-      <div class="progress-wrap"><div class="progress-bar" id="ps-prog"></div></div>
-      <div class="progress-label" id="ps-progl">Waiting...</div>
-    </div>
-  </aside>
-  <div class="main">
-    <div class="tabs">
-      <div class="tab active" onclick="switchTab('port','open')" id="port-tab-open">OPEN PORTS <span class="badge" id="port-b-open">0</span></div>
-      <div class="tab" onclick="switchTab('port','critical')" id="port-tab-critical">CRITICAL <span class="badge" id="port-b-critical">0</span></div>
-      <div class="tab" onclick="switchTab('port','log')" id="port-tab-log">LOG</div>
-    </div>
-    <div class="results-area">
-      <div class="disclaimer">⚠ Port scanning without permission may be illegal. Only scan authorized targets.</div>
-      <div class="tab-panel active" id="port-panel-open">
-        <div class="col-header" style="display:none;grid-template-columns:70px 120px 1fr auto" id="port-ch"><span>PORT</span><span>SERVICE</span><span>BANNER / INFO</span><span>RISK</span></div>
-        <div id="port-open-c"><div class="placeholder"><div class="placeholder-icon">🔌</div><div class="placeholder-text">ENTER HOST AND CLICK SCAN PORTS<br>SCANS COMMON SERVICES FOR OPEN PORTS</div></div></div>
-      </div>
-      <div class="tab-panel" id="port-panel-critical"><div id="port-crit-c"><div class="placeholder"><div class="placeholder-icon">🚨</div><div class="placeholder-text">CRITICAL OPEN PORTS APPEAR HERE<br>RDP, SMB, DATABASES, DOCKER ETC.</div></div></div></div>
-      <div class="tab-panel" id="port-panel-log"><div class="log-stream" id="port-log"></div></div>
-    </div>
-  </div>
-</div>
-
-<!-- ═══════════════════ MODULE: HEADERS ═══════════════════ -->
-<div class="module" id="mod-hdr">
-  <aside class="sidebar">
-    <div class="panel"><div class="panel-label">TARGET</div>
-      <div class="field"><label>URL</label><input type="text" id="hdr-target" placeholder="https://example.com"></div>
-      <div class="field"><label>WORKER URL</label><input type="text" id="hdr-worker" placeholder="https://your-worker.workers.dev"></div>
-    </div>
-    <div class="panel"><div class="panel-label">CHECK CATEGORIES</div>
-      <div class="wl-grid">
-        <label class="wl-item active"><input type="checkbox" id="hdr-sec" checked>SECURITY</label>
-        <label class="wl-item active"><input type="checkbox" id="hdr-info" checked>INFO LEAK</label>
-        <label class="wl-item active"><input type="checkbox" id="hdr-cors" checked>CORS</label>
-        <label class="wl-item active"><input type="checkbox" id="hdr-cookie" checked>COOKIES</label>
-        <label class="wl-item active"><input type="checkbox" id="hdr-tls" checked>TLS/HSTS</label>
-        <label class="wl-item active"><input type="checkbox" id="hdr-cache" checked>CACHING</label>
-      </div>
-    </div>
-    <button class="scan-btn" id="hdr-btn" onclick="startHdrScan()">▶ ANALYZE</button>
-    <div class="panel"><div class="panel-label">SCORE</div>
-      <div class="stats-grid">
-        <div class="stat-box"><div class="stat-num" id="hs-score" style="color:var(--accent)">—</div><div class="stat-label">SCORE /100</div></div>
-        <div class="stat-box"><div class="stat-num" id="hs-grade" style="color:var(--accent)">—</div><div class="stat-label">GRADE</div></div>
-        <div class="stat-box"><div class="stat-num" id="hs-miss" style="color:var(--danger)">0</div><div class="stat-label">MISSING</div></div>
-        <div class="stat-box"><div class="stat-num" id="hs-issues" style="color:var(--warn)">0</div><div class="stat-label">ISSUES</div></div>
-      </div>
-    </div>
-  </aside>
-  <div class="main">
-    <div class="tabs">
-      <div class="tab active" onclick="switchTab('hdr','analysis')" id="hdr-tab-analysis">ANALYSIS <span class="badge" id="hdr-b-issues">0</span></div>
-      <div class="tab" onclick="switchTab('hdr','raw')" id="hdr-tab-raw">RAW HEADERS</div>
-      <div class="tab" onclick="switchTab('hdr','log')" id="hdr-tab-log">LOG</div>
-    </div>
-    <div class="results-area">
-      <div class="tab-panel active" id="hdr-panel-analysis"><div id="hdr-analysis-c"><div class="placeholder"><div class="placeholder-icon">🛡</div><div class="placeholder-text">ENTER URL AND CLICK ANALYZE<br>CHECKS SECURITY HEADERS, CORS, COOKIES AND MORE</div></div></div></div>
-      <div class="tab-panel" id="hdr-panel-raw"><div id="hdr-raw-c"><div class="placeholder"><div class="placeholder-icon">📋</div><div class="placeholder-text">RAW RESPONSE HEADERS APPEAR HERE</div></div></div></div>
-      <div class="tab-panel" id="hdr-panel-log"><div class="log-stream" id="hdr-log"></div></div>
-    </div>
-  </div>
-</div>
-
-<!-- ═══════════════════ MODULE: JS ANALYZER ═══════════════════ -->
-<div class="module" id="mod-js">
-  <aside class="sidebar">
-    <div class="panel"><div class="panel-label">TARGET</div>
-      <div class="field"><label>URL (page or .js file)</label><input type="text" id="js-target" placeholder="https://example.com"></div>
-      <div class="field"><label>WORKER URL</label><input type="text" id="js-worker" placeholder="https://your-worker.workers.dev"></div>
-    </div>
-    <div class="panel"><div class="panel-label">SCAN OPTIONS</div>
-      <div class="wl-grid">
-        <label class="wl-item active"><input type="checkbox" id="js-secrets" checked>SECRETS/KEYS</label>
-        <label class="wl-item active"><input type="checkbox" id="js-endpoints" checked>API ENDPOINTS</label>
-        <label class="wl-item active"><input type="checkbox" id="js-urls" checked>INTERNAL URLS</label>
-        <label class="wl-item active"><input type="checkbox" id="js-s3" checked>S3 BUCKETS</label>
-        <label class="wl-item active"><input type="checkbox" id="js-jwt" checked>JWT TOKENS</label>
-        <label class="wl-item active"><input type="checkbox" id="js-crawl" checked>CRAWL JS FILES</label>
-      </div>
-    </div>
-    <button class="scan-btn" id="js-btn" onclick="startJSScan()">▶ ANALYZE JS</button>
-    <div class="panel"><div class="panel-label">STATS</div>
-      <div class="stats-grid">
-        <div class="stat-box"><div class="stat-num" id="js-secrets-count" style="color:var(--danger)">0</div><div class="stat-label">SECRETS</div></div>
-        <div class="stat-box"><div class="stat-num" id="js-endpoints-count" style="color:var(--info)">0</div><div class="stat-label">ENDPOINTS</div></div>
-        <div class="stat-box"><div class="stat-num" id="js-files-count" style="color:var(--accent)">0</div><div class="stat-label">JS FILES</div></div>
-        <div class="stat-box"><div class="stat-num" id="js-total-count" style="color:var(--muted)">0</div><div class="stat-label">TOTAL</div></div>
-      </div>
-    </div>
-  </aside>
-  <div class="main">
-    <div class="tabs">
-      <div class="tab active" onclick="switchTab('js','findings')" id="js-tab-findings">FINDINGS <span class="badge" id="js-b-findings">0</span></div>
-      <div class="tab" onclick="switchTab('js','files')" id="js-tab-files">JS FILES <span class="badge" id="js-b-files">0</span></div>
-      <div class="tab" onclick="switchTab('js','endpoints')" id="js-tab-endpoints">ENDPOINTS <span class="badge" id="js-b-endpoints">0</span></div>
-      <div class="tab" onclick="switchTab('js','log')" id="js-tab-log">LOG</div>
-    </div>
-    <div class="results-area">
-      <div class="disclaimer">⚠ JS analysis may reveal sensitive data. Handle findings responsibly per your bug bounty program rules.</div>
-      <div class="tab-panel active" id="js-panel-findings"><div id="js-findings-c"><div class="placeholder"><div class="placeholder-icon">📜</div><div class="placeholder-text">ENTER A PAGE URL OR DIRECT .JS URL<br>SCANS FOR SECRETS, API KEYS, ENDPOINTS<br>S3 BUCKETS AND INTERNAL URLS</div></div></div></div>
-      <div class="tab-panel" id="js-panel-files"><div id="js-files-c"><div class="placeholder"><div class="placeholder-icon">📁</div><div class="placeholder-text">JS FILE LIST APPEARS HERE</div></div></div></div>
-      <div class="tab-panel" id="js-panel-endpoints"><div id="js-endpoints-c"><div class="placeholder"><div class="placeholder-icon">🔗</div><div class="placeholder-text">DISCOVERED API ENDPOINTS APPEAR HERE</div></div></div></div>
-      <div class="tab-panel" id="js-panel-log"><div class="log-stream" id="js-log"></div></div>
-    </div>
-  </div>
-</div>
-
-<!-- ═══════════════════ MODULE: WHOIS/DNS ═══════════════════ -->
-<div class="module" id="mod-whois">
-  <aside class="sidebar">
-    <div class="panel"><div class="panel-label">TARGET</div>
-      <div class="field"><label>DOMAIN</label><input type="text" id="whois-target" placeholder="example.com"></div>
-      <div class="field"><label>WORKER URL</label><input type="text" id="whois-worker" placeholder="https://your-worker.workers.dev"></div>
-    </div>
-    <div class="panel"><div class="panel-label">CHECKS</div>
-      <div class="wl-grid">
-        <label class="wl-item active"><input type="checkbox" id="w-whois" checked>WHOIS/RDAP</label>
-        <label class="wl-item active"><input type="checkbox" id="w-a" checked>A RECORDS</label>
-        <label class="wl-item active"><input type="checkbox" id="w-mx" checked>MX RECORDS</label>
-        <label class="wl-item active"><input type="checkbox" id="w-txt" checked>TXT/SPF/DMARC</label>
-        <label class="wl-item active"><input type="checkbox" id="w-ns" checked>NS RECORDS</label>
-        <label class="wl-item active"><input type="checkbox" id="w-cname" checked>CNAME</label>
-        <label class="wl-item"><input type="checkbox" id="w-soa">SOA</label>
-        <label class="wl-item"><input type="checkbox" id="w-caa">CAA</label>
-      </div>
-    </div>
-    <button class="scan-btn" id="whois-btn" onclick="startWhoisScan()">▶ LOOKUP</button>
-    <div class="panel"><div class="panel-label">QUICK STATS</div>
-      <div id="whois-stats" style="font-family:'Share Tech Mono',monospace;font-size:.6rem;color:var(--muted);line-height:2;">No data yet</div>
-    </div>
-  </aside>
-  <div class="main">
-    <div class="tabs">
-      <div class="tab active" onclick="switchTab('whois','dns')" id="whois-tab-dns">DNS RECORDS</div>
-      <div class="tab" onclick="switchTab('whois','whois')" id="whois-tab-whois">WHOIS / RDAP</div>
-      <div class="tab" onclick="switchTab('whois','security')" id="whois-tab-security">EMAIL SECURITY</div>
-      <div class="tab" onclick="switchTab('whois','log')" id="whois-tab-log">LOG</div>
-    </div>
-    <div class="results-area">
-      <div class="tab-panel active" id="whois-panel-dns"><div id="whois-dns-c"><div class="placeholder"><div class="placeholder-icon">🌍</div><div class="placeholder-text">ENTER DOMAIN AND CLICK LOOKUP<br>SHOWS ALL DNS RECORDS, WHOIS DATA<br>SPF, DMARC AND EMAIL SECURITY</div></div></div></div>
-      <div class="tab-panel" id="whois-panel-whois"><div id="whois-whois-c"><div class="placeholder"><div class="placeholder-icon">📋</div><div class="placeholder-text">WHOIS / RDAP DATA APPEARS HERE</div></div></div></div>
-      <div class="tab-panel" id="whois-panel-security"><div id="whois-sec-c"><div class="placeholder"><div class="placeholder-icon">📧</div><div class="placeholder-text">SPF, DMARC AND DKIM INFO APPEARS HERE</div></div></div></div>
-      <div class="tab-panel" id="whois-panel-log"><div class="log-stream" id="whois-log"></div></div>
-    </div>
-  </div>
-</div>
-
-<!-- ═══════════════════ MODULE: TECH SCAN ═══════════════════ -->
-<div class="module" id="mod-tech">
-  <aside class="sidebar">
-    <div class="panel"><div class="panel-label">TARGET</div>
-      <div class="field"><label>URL</label><input type="text" id="tech-target" placeholder="https://example.com"></div>
-      <div class="field"><label>WORKER URL</label><input type="text" id="tech-worker" placeholder="https://your-worker.workers.dev"></div>
-    </div>
-    <button class="scan-btn" id="tech-btn" onclick="startTechScan()">▶ FINGERPRINT</button>
-    <div class="panel"><div class="panel-label">STATS</div>
-      <div class="stats-grid">
-        <div class="stat-box"><div class="stat-num" id="ts-total" style="color:var(--accent)">0</div><div class="stat-label">DETECTED</div></div>
-        <div class="stat-box"><div class="stat-num" id="ts-cats" style="color:var(--info)">0</div><div class="stat-label">CATEGORIES</div></div>
-        <div class="stat-box"><div class="stat-num" id="ts-medium" style="color:var(--warn)">0</div><div class="stat-label">NOTABLE</div></div>
-        <div class="stat-box"><div class="stat-num" id="ts-score" style="color:var(--muted)">—</div><div class="stat-label">HTTP STATUS</div></div>
-      </div>
-    </div>
-  </aside>
-  <div class="main">
-    <div class="tabs">
-      <div class="tab active" onclick="switchTab('tech','results')" id="tech-tab-results">TECHNOLOGIES <span class="badge" id="tech-b-results">0</span></div>
-      <div class="tab" onclick="switchTab('tech','versions')" id="tech-tab-versions">VERSION INFO</div>
-      <div class="tab" onclick="switchTab('tech','log')" id="tech-tab-log">LOG</div>
-    </div>
-    <div class="results-area">
-      <div class="tab-panel active" id="tech-panel-results"><div id="tech-results-c"><div class="placeholder"><div class="placeholder-icon">🖥</div><div class="placeholder-text">ENTER URL AND CLICK FINGERPRINT<br>DETECTS CMS, FRAMEWORKS, LIBRARIES<br>SERVERS, CDNs AND SECURITY TOOLS</div></div></div></div>
-      <div class="tab-panel" id="tech-panel-versions"><div id="tech-versions-c"><div class="placeholder"><div class="placeholder-icon">🏷</div><div class="placeholder-text">VERSION INFORMATION FROM HEADERS</div></div></div></div>
-      <div class="tab-panel" id="tech-panel-log"><div class="log-stream" id="tech-log"></div></div>
-    </div>
-  </div>
-</div>
-
-<!-- ═══════════════════ MODULE: S3 BUCKETS ═══════════════════ -->
-<div class="module" id="mod-s3">
-  <aside class="sidebar">
-    <div class="panel"><div class="panel-label">TARGET</div>
-      <div class="field"><label>COMPANY / DOMAIN NAME</label><input type="text" id="s3-target" placeholder="acmecorp or acmecorp.com"><div class="fn">The tool will check common bucket name variations</div></div>
-      <div class="field"><label>WORKER URL</label><input type="text" id="s3-worker" placeholder="https://your-worker.workers.dev"></div>
-    </div>
-    <div class="panel"><div class="panel-label">ADDITIONAL NAMES</div>
-      <div class="field"><label>EXTRA NAMES TO CHECK (comma separated)</label><input type="text" id="s3-extra" placeholder="acme, acme-corp, acmeinc"><div class="fn">Will also check common suffixes like -backup, -dev, -prod etc.</div></div>
-    </div>
-    <button class="scan-btn" id="s3-btn" onclick="startS3Scan()">▶ CHECK BUCKETS</button>
-    <div class="panel"><div class="panel-label">STATS</div>
-      <div class="stats-grid">
-        <div class="stat-box"><div class="stat-num" id="s3-public" style="color:var(--danger)">0</div><div class="stat-label">PUBLIC</div></div>
-        <div class="stat-box"><div class="stat-num" id="s3-exists" style="color:var(--warn)">0</div><div class="stat-label">EXISTS</div></div>
-        <div class="stat-box"><div class="stat-num" id="s3-checked" style="color:var(--info)">0</div><div class="stat-label">CHECKED</div></div>
-        <div class="stat-box"><div class="stat-num" id="s3-total" style="color:var(--muted)">0</div><div class="stat-label">TOTAL</div></div>
-      </div>
-      <div class="progress-wrap"><div class="progress-bar" id="s3-prog"></div></div>
-      <div class="progress-label" id="s3-progl">Waiting...</div>
-    </div>
-  </aside>
-  <div class="main">
-    <div class="tabs">
-      <div class="tab active" onclick="switchTab('s3','results')" id="s3-tab-results">RESULTS <span class="badge" id="s3-b-results">0</span></div>
-      <div class="tab" onclick="switchTab('s3','log')" id="s3-tab-log">LOG</div>
-    </div>
-    <div class="results-area">
-      <div class="disclaimer">⚠ Only check bucket names for organizations you have permission to test. Accessing public buckets without authorization may still violate terms of service.</div>
-      <div class="tab-panel active" id="s3-panel-results">
-        <div class="col-header" id="s3-ch" style="display:none;grid-template-columns:1fr 80px auto"><span>BUCKET NAME</span><span>STATUS</span><span>DETAIL</span></div>
-        <div id="s3-results-c"><div class="placeholder"><div class="placeholder-icon">☁</div><div class="placeholder-text">ENTER COMPANY NAME AND CLICK CHECK<br>FINDS PUBLIC OR EXPOSED AWS S3 BUCKETS<br>CHECKS COMMON NAMING PATTERNS</div></div></div>
-      </div>
-      <div class="tab-panel" id="s3-panel-log"><div class="log-stream" id="s3-log"></div></div>
-    </div>
-  </div>
-</div>
-
-<!-- ═══════════════════ MODULE: REPORT ═══════════════════ -->
-<!-- ═══════════════════ MODULE: GOOGLE DORKS ═══════════════════ -->
-<div class="module" id="mod-dork">
-  <aside class="sidebar">
-    <div class="panel"><div class="panel-label">TARGET</div>
-      <div class="field"><label>TARGET DOMAIN</label><input type="text" id="dork-target" placeholder="example.com"></div>
-      <div class="fn" style="margin-top:.2rem">Enter your domain — all dork queries will be scoped to site:yourdomain.com</div>
-    </div>
-    <div class="panel"><div class="panel-label">CATEGORIES</div>
-      <div class="wl-grid" id="dork-cats">
-        <label class="wl-item active"><input type="checkbox" value="creds" checked>CREDENTIALS</label>
-        <label class="wl-item active"><input type="checkbox" value="docs" checked>DOCUMENTS</label>
-        <label class="wl-item active"><input type="checkbox" value="config" checked>CONFIG FILES</label>
-        <label class="wl-item active"><input type="checkbox" value="db" checked>DATABASES</label>
-        <label class="wl-item active"><input type="checkbox" value="login" checked>LOGIN PANELS</label>
-        <label class="wl-item active"><input type="checkbox" value="camera" checked>CAMERAS/IoT</label>
-        <label class="wl-item active"><input type="checkbox" value="vulns" checked>VULN SOFTWARE</label>
-        <label class="wl-item active"><input type="checkbox" value="email" checked>EMAIL/STAFF</label>
-      </div>
-    </div>
-    <button class="scan-btn" onclick="generateDorks()">▶ GENERATE DORKS</button>
-    <div class="panel"><div class="panel-label">TIPS</div>
-      <div class="fn" style="line-height:1.8">
-        • Click <span style="color:var(--info)">GOOGLE</span> to open query directly<br>
-        • Click <span style="color:var(--muted)">COPY</span> to copy query<br>
-        • Use only on domains you <strong style="color:var(--warn)">own or are authorized</strong> to test<br>
-        • Results may take time to appear in Google<br>
-        • Some queries may return no results — that is a good sign
-      </div>
-    </div>
-  </aside>
-  <div class="main">
-    <div class="tabs">
-      <div class="tab active" onclick="switchTab('dork','results')" id="dork-tab-results">DORK QUERIES <span class="badge" id="dork-b-results">0</span></div>
-      <div class="tab" onclick="switchTab('dork','all')" id="dork-tab-all">ALL QUERIES <span class="badge" id="dork-b-all">0</span></div>
-      <div class="tab" onclick="switchTab('dork','guide')" id="dork-tab-guide">HOW TO USE</div>
-    </div>
-    <div class="results-area">
-      <div class="disclaimer">⚠ Google dorking is a legitimate reconnaissance technique for authorized security testing. Only run these queries against domains you own or have explicit written permission to test. Unauthorized reconnaissance may violate computer fraud laws.</div>
-      <div class="tab-panel active" id="dork-panel-results">
-        <div id="dork-output">
-          <div class="placeholder"><div class="placeholder-icon">🔎</div><div class="placeholder-text">ENTER YOUR DOMAIN AND CLICK GENERATE DORKS<br>CREATES TARGETED GOOGLE SEARCH QUERIES TO FIND<br>EXPOSED SENSITIVE DATA INDEXED BY GOOGLE</div></div>
-        </div>
-      </div>
-      <div class="tab-panel" id="dork-panel-all">
-        <div id="dork-all-output">
-          <div class="placeholder"><div class="placeholder-icon">📋</div><div class="placeholder-text">ALL GENERATED QUERIES APPEAR HERE AS A FLAT LIST<br>EASY TO COPY AND SHARE WITH YOUR SECURITY TEAM</div></div>
-        </div>
-      </div>
-      <div class="tab-panel" id="dork-panel-guide">
-        <div style="font-family:'Share Tech Mono',monospace;font-size:.7rem;line-height:2;color:var(--text);padding:.5rem">
-          <div style="color:var(--accent);font-size:.8rem;margin-bottom:.75rem;font-family:'Rajdhani',sans-serif;font-weight:700;text-transform:uppercase">HOW GOOGLE DORKING WORKS</div>
-          <div style="color:var(--muted);margin-bottom:1rem">Google indexes publicly accessible web content. If sensitive files are accidentally exposed on a web server, Google may index them and they become searchable. Dorking uses advanced search operators to find this data.</div>
-          <div style="color:var(--accent);margin-bottom:.3rem">COMMON OPERATORS:</div>
-          <div style="color:var(--muted);margin-bottom:.75rem">
-            <span style="color:var(--text)">site:</span> — restrict results to a specific domain<br>
-            <span style="color:var(--text)">filetype:</span> — search for specific file types<br>
-            <span style="color:var(--text)">inurl:</span> — search for keywords in URLs<br>
-            <span style="color:var(--text)">intitle:</span> — search for keywords in page titles<br>
-            <span style="color:var(--text)">intext:</span> — search for keywords in page content<br>
-            <span style="color:var(--text)">ext:</span> — alternative to filetype:<br>
-            <span style="color:var(--text)">"quotes"</span> — exact phrase matching
-          </div>
-          <div style="color:var(--accent);margin-bottom:.3rem">WHAT TO DO IF YOU FIND RESULTS:</div>
-          <div style="color:var(--muted)">
-            1. Document the finding with screenshots<br>
-            2. Remove the exposed file from the web server immediately<br>
-            3. Rotate any credentials or keys that were exposed<br>
-            4. Request Google removal via Search Console<br>
-            5. Check your web server logs to see if the file was accessed<br>
-            6. Review how the file became publicly accessible
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="module" id="mod-report">
-  <aside class="sidebar">
-    <div class="panel"><div class="panel-label">REPORT CONFIG</div>
-      <div class="field"><label>TARGET DOMAIN</label><input type="text" id="rpt-target" placeholder="example.com"></div>
-      <div class="field"><label>PROGRAM NAME</label><input type="text" id="rpt-program" placeholder="HackerOne — Example Program"></div>
-      <div class="field"><label>RESEARCHER NAME</label><input type="text" id="rpt-researcher" placeholder="welchsec"></div>
-    </div>
-    <div class="panel"><div class="panel-label">INCLUDE FINDINGS FROM</div>
-      <div class="wl-grid">
-        <label class="wl-item active"><input type="checkbox" id="rpt-dir" checked>DIR SCAN</label>
-        <label class="wl-item active"><input type="checkbox" id="rpt-port" checked>PORT SCAN</label>
-        <label class="wl-item active"><input type="checkbox" id="rpt-hdr" checked>HEADERS</label>
-        <label class="wl-item active"><input type="checkbox" id="rpt-js" checked>JS FINDINGS</label>
-        <label class="wl-item active"><input type="checkbox" id="rpt-sub" checked>SUBDOMAINS</label>
-        <label class="wl-item active"><input type="checkbox" id="rpt-s3" checked>S3 BUCKETS</label>
-        <label class="wl-item active"><input type="checkbox" id="rpt-tech" checked>TECH STACK</label>
-      </div>
-    </div>
-    <button class="scan-btn" onclick="generateReport()">▶ GENERATE REPORT</button>
-    <button class="scan-btn" style="border-color:var(--info);color:var(--info);margin-top:.5rem" onclick="exportReport()">⬇ EXPORT .TXT</button>
-  </aside>
-  <div class="main">
-    <div class="tabs">
-      <div class="tab active" onclick="switchTab('report','view')" id="report-tab-view">REPORT VIEW</div>
-      <div class="tab" onclick="switchTab('report','stats')" id="report-tab-stats">STATISTICS</div>
-    </div>
-    <div class="results-area">
-      <div class="tab-panel active" id="report-panel-view"><div id="report-view-c"><div class="placeholder"><div class="placeholder-icon">📄</div><div class="placeholder-text">RUN SCANS ACROSS THE OTHER MODULES<br>THEN CLICK GENERATE REPORT TO COMPILE<br>ALL FINDINGS INTO A BUG BOUNTY REPORT</div></div></div></div>
-      <div class="tab-panel" id="report-panel-stats"><div id="report-stats-c"><div class="placeholder"><div class="placeholder-icon">📊</div><div class="placeholder-text">STATISTICS SUMMARY APPEARS HERE</div></div></div></div>
-    </div>
-  </div>
-</div>
-
-<script>
+<script defer>
 // ── Shared worker URL helper ──────────────────────────────────────────────────
 function getWorker(mod) {
   const map = { dir:'dir-worker', sub:'sub-worker', port:'port-worker', hdr:'hdr-worker', js:'js-worker', whois:'whois-worker', tech:'tech-worker', s3:'s3-worker' };
@@ -1876,5 +1343,533 @@ function showToast(msg) {
 }
 
 </script>
+</head>
+<body>
+<div class="topbar">
+  <div class="brand">Welch<span>Sec</span> // Recon Suite</div>
+  <div class="topbar-right">
+    <div class="status-led" id="statusLed"></div>
+    <span id="statusText">IDLE</span>
+    <span style="color:var(--border)">|</span>
+    <a href="https://welchsec.github.io/TTP-Threat-Report/" target="_blank">TTP ↗</a>
+    <a href="https://welchsec.github.io/Intrusion-Report/" target="_blank">INTRUSION ↗</a>
+  </div>
+</div>
+
+<div class="module-bar">
+  <div class="mod-tab active" onclick="switchMod('dir')" id="mt-dir">🔍 DIR SCAN</div>
+  <div class="mod-tab" onclick="switchMod('sub')" id="mt-sub">🌐 SUBDOMAINS</div>
+  <div class="mod-tab" onclick="switchMod('port')" id="mt-port">🔌 PORT SCAN</div>
+  <div class="mod-tab" onclick="switchMod('hdr')" id="mt-hdr">🛡 HEADERS</div>
+  <div class="mod-tab" onclick="switchMod('js')" id="mt-js">📜 JS ANALYZER</div>
+  <div class="mod-tab" onclick="switchMod('whois')" id="mt-whois">🌍 WHOIS/DNS</div>
+  <div class="mod-tab" onclick="switchMod('tech')" id="mt-tech">🖥 TECH SCAN</div>
+  <div class="mod-tab" onclick="switchMod('s3')" id="mt-s3">☁ S3 BUCKETS</div>
+  <div class="mod-tab" onclick="switchMod('dork')" id="mt-dork">🔎 GOOGLE DORKS</div>
+  <div class="mod-tab" onclick="switchMod('report')" id="mt-report">📄 REPORT</div>
+</div>
+
+<!-- ═══════════════════ MODULE: DIR SCAN ═══════════════════ -->
+<div class="module active" id="mod-dir">
+  <aside class="sidebar">
+    <div class="panel"><div class="panel-label">TARGET</div>
+      <div class="field"><label>URL</label><input type="text" id="dir-target" placeholder="https://example.com"></div>
+      <div class="field"><label>WORKER URL</label><input type="text" id="dir-worker" placeholder="https://your-worker.workers.dev"></div>
+    </div>
+    <div class="panel"><div class="panel-label">CONFIG</div>
+      <div class="field"><label>CONCURRENCY</label><select id="dir-con"><option value="3">3 — Stealth</option><option value="5" selected>5 — Balanced</option><option value="10">10 — Aggressive</option><option value="20">20 — Max</option></select></div>
+      <div class="field"><label>DELAY (ms)</label><select id="dir-delay"><option value="0">0ms</option><option value="200" selected>200ms</option><option value="500">500ms</option><option value="1000">1s</option></select></div>
+      <div class="field"><label>SHOW</label><select id="dir-mode"><option value="interesting" selected>Interesting</option><option value="all">All (no 404)</option><option value="200only">200 Only</option></select></div>
+    </div>
+    <div class="panel"><div class="panel-label">WORDLISTS</div>
+      <div class="wl-grid" id="dir-wlg">
+        <label class="wl-item active"><input type="checkbox" value="admin" checked>ADMIN</label>
+        <label class="wl-item active"><input type="checkbox" value="backups" checked>BACKUPS</label>
+        <label class="wl-item active"><input type="checkbox" value="config" checked>CONFIG</label>
+        <label class="wl-item active"><input type="checkbox" value="api" checked>API</label>
+        <label class="wl-item"><input type="checkbox" value="vcs">VCS</label>
+        <label class="wl-item"><input type="checkbox" value="logs">LOGS</label>
+        <label class="wl-item"><input type="checkbox" value="database">DATABASE</label>
+        <label class="wl-item"><input type="checkbox" value="uploads">UPLOADS</label>
+        <label class="wl-item"><input type="checkbox" value="wordpress">WORDPRESS</label>
+        <label class="wl-item"><input type="checkbox" value="debug">DEBUG</label>
+        <label class="wl-item"><input type="checkbox" value="cloud">CLOUD META</label>
+        <label class="wl-item"><input type="checkbox" value="cve">CVE PATHS</label>
+      </div>
+    </div>
+    <button class="scan-btn" id="dir-btn" onclick="startDirScan()">▶ SCAN</button>
+    <button class="stop-btn" id="dir-stop" onclick="dirStop=true">■ STOP</button>
+    <div class="panel"><div class="panel-label">STATS</div>
+      <div class="stats-grid">
+        <div class="stat-box"><div class="stat-num" id="ds-checked" style="color:var(--info)">0</div><div class="stat-label">CHECKED</div></div>
+        <div class="stat-box"><div class="stat-num" id="ds-found" style="color:var(--accent)">0</div><div class="stat-label">FOUND</div></div>
+        <div class="stat-box"><div class="stat-num" id="ds-crit" style="color:var(--danger)">0</div><div class="stat-label">CRITICAL</div></div>
+        <div class="stat-box"><div class="stat-num" id="ds-err" style="color:var(--muted)">0</div><div class="stat-label">ERRORS</div></div>
+      </div>
+      <div class="progress-wrap"><div class="progress-bar" id="ds-prog"></div></div>
+      <div class="progress-label" id="ds-progl">0 / 0</div>
+    </div>
+  </aside>
+  <div class="main">
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('dir','findings')" id="dir-tab-findings">FINDINGS <span class="badge" id="dir-b-findings">0</span></div>
+      <div class="tab" onclick="switchTab('dir','critical')" id="dir-tab-critical">CRITICAL <span class="badge" id="dir-b-critical">0</span></div>
+      <div class="tab" onclick="switchTab('dir','all')" id="dir-tab-all">ALL <span class="badge" id="dir-b-all">0</span></div>
+      <div class="tab" onclick="switchTab('dir','log')" id="dir-tab-log">LOG</div>
+    </div>
+    <div class="results-area">
+      <div class="disclaimer">⚠ Only scan targets you own or have explicit written permission to test.</div>
+      <div class="tab-panel active" id="dir-panel-findings">
+        <div class="summary-row" id="dir-sumrow" style="display:none">
+          <div class="summary-card"><div>💀</div><div><div class="sum-num" style="color:var(--danger)" id="dir-s-crit">0</div><div class="sum-lbl">CRITICAL</div></div></div>
+          <div class="summary-card"><div>🟠</div><div><div class="sum-num" style="color:var(--warn)" id="dir-s-high">0</div><div class="sum-lbl">HIGH</div></div></div>
+          <div class="summary-card"><div>🟡</div><div><div class="sum-num" style="color:var(--info)" id="dir-s-med">0</div><div class="sum-lbl">MEDIUM</div></div></div>
+          <div class="summary-card"><div>✅</div><div><div class="sum-num" style="color:var(--accent)" id="dir-s-tot">0</div><div class="sum-lbl">TOTAL</div></div></div>
+        </div>
+        <div class="filter-bar" id="dir-fb" style="display:none">
+          <input class="filter-input" placeholder="Filter paths..." oninput="dirFilter(this.value)">
+          <button class="filter-btn on" onclick="dirSF('all',this)">ALL</button>
+          <button class="filter-btn" onclick="dirSF('200',this)">200</button>
+          <button class="filter-btn" onclick="dirSF('403',this)">403</button>
+          <button class="filter-btn" onclick="dirSF('401',this)">401</button>
+          <button class="filter-btn" onclick="dirSF('500',this)">500</button>
+          <button class="filter-btn" onclick="dirExport()" style="margin-left:auto">⬇ CSV</button>
+        </div>
+        <div class="col-header" id="dir-ch" style="display:none;grid-template-columns:55px 1fr auto auto"><span>STATUS</span><span>PATH</span><span>SIZE</span><span>SEV</span></div>
+        <div id="dir-findings-c"><div class="placeholder"><div class="placeholder-icon">🔍</div><div class="placeholder-text">ENTER TARGET AND SELECT WORDLISTS</div></div></div>
+      </div>
+      <div class="tab-panel" id="dir-panel-critical"><div id="dir-crit-c"><div class="placeholder"><div class="placeholder-icon">🚨</div><div class="placeholder-text">CRITICAL FINDINGS APPEAR HERE</div></div></div></div>
+      <div class="tab-panel" id="dir-panel-all">
+        <div class="col-header" style="grid-template-columns:55px 1fr auto auto"><span>STATUS</span><span>PATH</span><span>SIZE</span><span>SEV</span></div>
+        <div id="dir-all-c"></div>
+      </div>
+      <div class="tab-panel" id="dir-panel-log"><div class="log-stream" id="dir-log"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ MODULE: SUBDOMAINS ═══════════════════ -->
+<div class="module" id="mod-sub">
+  <aside class="sidebar">
+    <div class="panel"><div class="panel-label">TARGET</div>
+      <div class="field"><label>ROOT DOMAIN</label><input type="text" id="sub-target" placeholder="example.com"></div>
+      <div class="field"><label>WORKER URL</label><input type="text" id="sub-worker" placeholder="https://your-worker.workers.dev"></div>
+    </div>
+    <div class="panel"><div class="panel-label">SOURCES</div>
+      <div class="wl-grid">
+        <label class="wl-item active"><input type="checkbox" id="use-crt" checked>crt.sh</label>
+        <label class="wl-item active"><input type="checkbox" id="use-ht" checked>HackerTarget</label>
+        <label class="wl-item active"><input type="checkbox" id="use-brute" checked>DNS BRUTE</label>
+        <label class="wl-item"><input type="checkbox" id="use-otx">AlienVault</label>
+      </div>
+    </div>
+    <div class="panel"><div class="panel-label">BRUTE CONFIG</div>
+      <div class="field"><label>WORDLIST</label><select id="sub-size"><option value="small">Small (~50)</option><option value="medium" selected>Medium (~150)</option><option value="large">Large (~400)</option></select></div>
+      <div class="field"><label>CONCURRENCY</label><select id="sub-con"><option value="5">5</option><option value="10" selected>10</option><option value="20">20</option></select></div>
+    </div>
+    <button class="scan-btn" id="sub-btn" onclick="startSubScan()">▶ ENUMERATE</button>
+    <button class="stop-btn" id="sub-stop" onclick="subStop=true">■ STOP</button>
+    <div class="panel"><div class="panel-label">STATS</div>
+      <div class="stats-grid">
+        <div class="stat-box"><div class="stat-num" id="ss-found" style="color:var(--accent)">0</div><div class="stat-label">FOUND</div></div>
+        <div class="stat-box"><div class="stat-num" id="ss-live" style="color:var(--accent)">0</div><div class="stat-label">LIVE</div></div>
+        <div class="stat-box"><div class="stat-num" id="ss-checked" style="color:var(--info)">0</div><div class="stat-label">CHECKED</div></div>
+        <div class="stat-box"><div class="stat-num" id="ss-src" style="color:var(--muted)">0</div><div class="stat-label">SOURCES</div></div>
+      </div>
+      <div class="progress-wrap"><div class="progress-bar" id="ss-prog"></div></div>
+      <div class="progress-label" id="ss-progl">Waiting...</div>
+    </div>
+  </aside>
+  <div class="main">
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('sub','results')" id="sub-tab-results">SUBDOMAINS <span class="badge" id="sub-b-results">0</span></div>
+      <div class="tab" onclick="switchTab('sub','live')" id="sub-tab-live">LIVE <span class="badge" id="sub-b-live">0</span></div>
+      <div class="tab" onclick="switchTab('sub','log')" id="sub-tab-log">LOG</div>
+    </div>
+    <div class="results-area">
+      <div class="disclaimer">⚠ Only enumerate domains you own or have permission to test.</div>
+      <div class="tab-panel active" id="sub-panel-results">
+        <div class="summary-row" id="sub-sumrow" style="display:none">
+          <div class="summary-card"><div>🌐</div><div><div class="sum-num" style="color:var(--accent)" id="sub-s-tot">0</div><div class="sum-lbl">TOTAL</div></div></div>
+          <div class="summary-card"><div>✅</div><div><div class="sum-num" style="color:var(--accent)" id="sub-s-live">0</div><div class="sum-lbl">LIVE</div></div></div>
+          <div class="summary-card"><div>🔒</div><div><div class="sum-num" style="color:var(--info)" id="sub-s-crt">0</div><div class="sum-lbl">crt.sh</div></div></div>
+          <div class="summary-card"><div>💥</div><div><div class="sum-num" style="color:var(--purple)" id="sub-s-brute">0</div><div class="sum-lbl">BRUTE</div></div></div>
+        </div>
+        <div class="filter-bar" id="sub-fb" style="display:none">
+          <input class="filter-input" placeholder="Filter subdomains..." oninput="subFilter(this.value)">
+          <button class="filter-btn on" onclick="subSF('all',this)">ALL</button>
+          <button class="filter-btn" onclick="subSF('live',this)">LIVE</button>
+          <button class="filter-btn" onclick="subSF('crt',this)">crt.sh</button>
+          <button class="filter-btn" onclick="subSF('brute',this)">BRUTE</button>
+          <button class="filter-btn" onclick="subExport()" style="margin-left:auto">⬇ CSV</button>
+        </div>
+        <div class="col-header" id="sub-ch" style="display:none;grid-template-columns:1fr 120px 90px auto"><span>SUBDOMAIN</span><span>IP</span><span>SOURCE</span><span>STATUS</span></div>
+        <div id="sub-results-c"><div class="placeholder"><div class="placeholder-icon">🌐</div><div class="placeholder-text">ENTER ROOT DOMAIN AND CLICK ENUMERATE</div></div></div>
+      </div>
+      <div class="tab-panel" id="sub-panel-live">
+        <div class="col-header" style="grid-template-columns:1fr 120px 90px auto"><span>SUBDOMAIN</span><span>IP</span><span>SOURCE</span><span>STATUS</span></div>
+        <div id="sub-live-c"></div>
+      </div>
+      <div class="tab-panel" id="sub-panel-log"><div class="log-stream" id="sub-log"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ MODULE: PORT SCAN ═══════════════════ -->
+<div class="module" id="mod-port">
+  <aside class="sidebar">
+    <div class="panel"><div class="panel-label">TARGET</div>
+      <div class="field"><label>HOST / IP</label><input type="text" id="port-target" placeholder="example.com or 1.2.3.4"></div>
+      <div class="field"><label>WORKER URL</label><input type="text" id="port-worker" placeholder="https://your-worker.workers.dev"></div>
+    </div>
+    <div class="panel"><div class="panel-label">PORT SELECTION</div>
+      <div class="wl-grid">
+        <label class="wl-item active"><input type="checkbox" value="common" checked>COMMON</label>
+        <label class="wl-item active"><input type="checkbox" value="web" checked>WEB</label>
+        <label class="wl-item"><input type="checkbox" value="db">DATABASES</label>
+        <label class="wl-item"><input type="checkbox" value="remote">REMOTE ACCESS</label>
+        <label class="wl-item"><input type="checkbox" value="mail">MAIL</label>
+        <label class="wl-item"><input type="checkbox" value="devops">DEVOPS</label>
+      </div>
+    </div>
+    <div class="panel"><div class="panel-label">CUSTOM PORTS</div>
+      <div class="field"><label>ADDITIONAL PORTS (comma separated)</label><input type="text" id="port-custom" placeholder="8080,8443,9000"></div>
+    </div>
+    <button class="scan-btn" id="port-btn" onclick="startPortScan()">▶ SCAN PORTS</button>
+    <div class="panel"><div class="panel-label">STATS</div>
+      <div class="stats-grid">
+        <div class="stat-box"><div class="stat-num" id="ps-open" style="color:var(--accent)">0</div><div class="stat-label">OPEN</div></div>
+        <div class="stat-box"><div class="stat-num" id="ps-crit" style="color:var(--danger)">0</div><div class="stat-label">CRITICAL</div></div>
+        <div class="stat-box"><div class="stat-num" id="ps-high" style="color:var(--warn)">0</div><div class="stat-label">HIGH RISK</div></div>
+        <div class="stat-box"><div class="stat-num" id="ps-total" style="color:var(--muted)">0</div><div class="stat-label">SCANNED</div></div>
+      </div>
+      <div class="progress-wrap"><div class="progress-bar" id="ps-prog"></div></div>
+      <div class="progress-label" id="ps-progl">Waiting...</div>
+    </div>
+  </aside>
+  <div class="main">
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('port','open')" id="port-tab-open">OPEN PORTS <span class="badge" id="port-b-open">0</span></div>
+      <div class="tab" onclick="switchTab('port','critical')" id="port-tab-critical">CRITICAL <span class="badge" id="port-b-critical">0</span></div>
+      <div class="tab" onclick="switchTab('port','log')" id="port-tab-log">LOG</div>
+    </div>
+    <div class="results-area">
+      <div class="disclaimer">⚠ Port scanning without permission may be illegal. Only scan authorized targets.</div>
+      <div class="tab-panel active" id="port-panel-open">
+        <div class="col-header" style="display:none;grid-template-columns:70px 120px 1fr auto" id="port-ch"><span>PORT</span><span>SERVICE</span><span>BANNER / INFO</span><span>RISK</span></div>
+        <div id="port-open-c"><div class="placeholder"><div class="placeholder-icon">🔌</div><div class="placeholder-text">ENTER HOST AND CLICK SCAN PORTS<br>SCANS COMMON SERVICES FOR OPEN PORTS</div></div></div>
+      </div>
+      <div class="tab-panel" id="port-panel-critical"><div id="port-crit-c"><div class="placeholder"><div class="placeholder-icon">🚨</div><div class="placeholder-text">CRITICAL OPEN PORTS APPEAR HERE<br>RDP, SMB, DATABASES, DOCKER ETC.</div></div></div></div>
+      <div class="tab-panel" id="port-panel-log"><div class="log-stream" id="port-log"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ MODULE: HEADERS ═══════════════════ -->
+<div class="module" id="mod-hdr">
+  <aside class="sidebar">
+    <div class="panel"><div class="panel-label">TARGET</div>
+      <div class="field"><label>URL</label><input type="text" id="hdr-target" placeholder="https://example.com"></div>
+      <div class="field"><label>WORKER URL</label><input type="text" id="hdr-worker" placeholder="https://your-worker.workers.dev"></div>
+    </div>
+    <div class="panel"><div class="panel-label">CHECK CATEGORIES</div>
+      <div class="wl-grid">
+        <label class="wl-item active"><input type="checkbox" id="hdr-sec" checked>SECURITY</label>
+        <label class="wl-item active"><input type="checkbox" id="hdr-info" checked>INFO LEAK</label>
+        <label class="wl-item active"><input type="checkbox" id="hdr-cors" checked>CORS</label>
+        <label class="wl-item active"><input type="checkbox" id="hdr-cookie" checked>COOKIES</label>
+        <label class="wl-item active"><input type="checkbox" id="hdr-tls" checked>TLS/HSTS</label>
+        <label class="wl-item active"><input type="checkbox" id="hdr-cache" checked>CACHING</label>
+      </div>
+    </div>
+    <button class="scan-btn" id="hdr-btn" onclick="startHdrScan()">▶ ANALYZE</button>
+    <div class="panel"><div class="panel-label">SCORE</div>
+      <div class="stats-grid">
+        <div class="stat-box"><div class="stat-num" id="hs-score" style="color:var(--accent)">—</div><div class="stat-label">SCORE /100</div></div>
+        <div class="stat-box"><div class="stat-num" id="hs-grade" style="color:var(--accent)">—</div><div class="stat-label">GRADE</div></div>
+        <div class="stat-box"><div class="stat-num" id="hs-miss" style="color:var(--danger)">0</div><div class="stat-label">MISSING</div></div>
+        <div class="stat-box"><div class="stat-num" id="hs-issues" style="color:var(--warn)">0</div><div class="stat-label">ISSUES</div></div>
+      </div>
+    </div>
+  </aside>
+  <div class="main">
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('hdr','analysis')" id="hdr-tab-analysis">ANALYSIS <span class="badge" id="hdr-b-issues">0</span></div>
+      <div class="tab" onclick="switchTab('hdr','raw')" id="hdr-tab-raw">RAW HEADERS</div>
+      <div class="tab" onclick="switchTab('hdr','log')" id="hdr-tab-log">LOG</div>
+    </div>
+    <div class="results-area">
+      <div class="tab-panel active" id="hdr-panel-analysis"><div id="hdr-analysis-c"><div class="placeholder"><div class="placeholder-icon">🛡</div><div class="placeholder-text">ENTER URL AND CLICK ANALYZE<br>CHECKS SECURITY HEADERS, CORS, COOKIES AND MORE</div></div></div></div>
+      <div class="tab-panel" id="hdr-panel-raw"><div id="hdr-raw-c"><div class="placeholder"><div class="placeholder-icon">📋</div><div class="placeholder-text">RAW RESPONSE HEADERS APPEAR HERE</div></div></div></div>
+      <div class="tab-panel" id="hdr-panel-log"><div class="log-stream" id="hdr-log"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ MODULE: JS ANALYZER ═══════════════════ -->
+<div class="module" id="mod-js">
+  <aside class="sidebar">
+    <div class="panel"><div class="panel-label">TARGET</div>
+      <div class="field"><label>URL (page or .js file)</label><input type="text" id="js-target" placeholder="https://example.com"></div>
+      <div class="field"><label>WORKER URL</label><input type="text" id="js-worker" placeholder="https://your-worker.workers.dev"></div>
+    </div>
+    <div class="panel"><div class="panel-label">SCAN OPTIONS</div>
+      <div class="wl-grid">
+        <label class="wl-item active"><input type="checkbox" id="js-secrets" checked>SECRETS/KEYS</label>
+        <label class="wl-item active"><input type="checkbox" id="js-endpoints" checked>API ENDPOINTS</label>
+        <label class="wl-item active"><input type="checkbox" id="js-urls" checked>INTERNAL URLS</label>
+        <label class="wl-item active"><input type="checkbox" id="js-s3" checked>S3 BUCKETS</label>
+        <label class="wl-item active"><input type="checkbox" id="js-jwt" checked>JWT TOKENS</label>
+        <label class="wl-item active"><input type="checkbox" id="js-crawl" checked>CRAWL JS FILES</label>
+      </div>
+    </div>
+    <button class="scan-btn" id="js-btn" onclick="startJSScan()">▶ ANALYZE JS</button>
+    <div class="panel"><div class="panel-label">STATS</div>
+      <div class="stats-grid">
+        <div class="stat-box"><div class="stat-num" id="js-secrets-count" style="color:var(--danger)">0</div><div class="stat-label">SECRETS</div></div>
+        <div class="stat-box"><div class="stat-num" id="js-endpoints-count" style="color:var(--info)">0</div><div class="stat-label">ENDPOINTS</div></div>
+        <div class="stat-box"><div class="stat-num" id="js-files-count" style="color:var(--accent)">0</div><div class="stat-label">JS FILES</div></div>
+        <div class="stat-box"><div class="stat-num" id="js-total-count" style="color:var(--muted)">0</div><div class="stat-label">TOTAL</div></div>
+      </div>
+    </div>
+  </aside>
+  <div class="main">
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('js','findings')" id="js-tab-findings">FINDINGS <span class="badge" id="js-b-findings">0</span></div>
+      <div class="tab" onclick="switchTab('js','files')" id="js-tab-files">JS FILES <span class="badge" id="js-b-files">0</span></div>
+      <div class="tab" onclick="switchTab('js','endpoints')" id="js-tab-endpoints">ENDPOINTS <span class="badge" id="js-b-endpoints">0</span></div>
+      <div class="tab" onclick="switchTab('js','log')" id="js-tab-log">LOG</div>
+    </div>
+    <div class="results-area">
+      <div class="disclaimer">⚠ JS analysis may reveal sensitive data. Handle findings responsibly per your bug bounty program rules.</div>
+      <div class="tab-panel active" id="js-panel-findings"><div id="js-findings-c"><div class="placeholder"><div class="placeholder-icon">📜</div><div class="placeholder-text">ENTER A PAGE URL OR DIRECT .JS URL<br>SCANS FOR SECRETS, API KEYS, ENDPOINTS<br>S3 BUCKETS AND INTERNAL URLS</div></div></div></div>
+      <div class="tab-panel" id="js-panel-files"><div id="js-files-c"><div class="placeholder"><div class="placeholder-icon">📁</div><div class="placeholder-text">JS FILE LIST APPEARS HERE</div></div></div></div>
+      <div class="tab-panel" id="js-panel-endpoints"><div id="js-endpoints-c"><div class="placeholder"><div class="placeholder-icon">🔗</div><div class="placeholder-text">DISCOVERED API ENDPOINTS APPEAR HERE</div></div></div></div>
+      <div class="tab-panel" id="js-panel-log"><div class="log-stream" id="js-log"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ MODULE: WHOIS/DNS ═══════════════════ -->
+<div class="module" id="mod-whois">
+  <aside class="sidebar">
+    <div class="panel"><div class="panel-label">TARGET</div>
+      <div class="field"><label>DOMAIN</label><input type="text" id="whois-target" placeholder="example.com"></div>
+      <div class="field"><label>WORKER URL</label><input type="text" id="whois-worker" placeholder="https://your-worker.workers.dev"></div>
+    </div>
+    <div class="panel"><div class="panel-label">CHECKS</div>
+      <div class="wl-grid">
+        <label class="wl-item active"><input type="checkbox" id="w-whois" checked>WHOIS/RDAP</label>
+        <label class="wl-item active"><input type="checkbox" id="w-a" checked>A RECORDS</label>
+        <label class="wl-item active"><input type="checkbox" id="w-mx" checked>MX RECORDS</label>
+        <label class="wl-item active"><input type="checkbox" id="w-txt" checked>TXT/SPF/DMARC</label>
+        <label class="wl-item active"><input type="checkbox" id="w-ns" checked>NS RECORDS</label>
+        <label class="wl-item active"><input type="checkbox" id="w-cname" checked>CNAME</label>
+        <label class="wl-item"><input type="checkbox" id="w-soa">SOA</label>
+        <label class="wl-item"><input type="checkbox" id="w-caa">CAA</label>
+      </div>
+    </div>
+    <button class="scan-btn" id="whois-btn" onclick="startWhoisScan()">▶ LOOKUP</button>
+    <div class="panel"><div class="panel-label">QUICK STATS</div>
+      <div id="whois-stats" style="font-family:'Share Tech Mono',monospace;font-size:.6rem;color:var(--muted);line-height:2;">No data yet</div>
+    </div>
+  </aside>
+  <div class="main">
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('whois','dns')" id="whois-tab-dns">DNS RECORDS</div>
+      <div class="tab" onclick="switchTab('whois','whois')" id="whois-tab-whois">WHOIS / RDAP</div>
+      <div class="tab" onclick="switchTab('whois','security')" id="whois-tab-security">EMAIL SECURITY</div>
+      <div class="tab" onclick="switchTab('whois','log')" id="whois-tab-log">LOG</div>
+    </div>
+    <div class="results-area">
+      <div class="tab-panel active" id="whois-panel-dns"><div id="whois-dns-c"><div class="placeholder"><div class="placeholder-icon">🌍</div><div class="placeholder-text">ENTER DOMAIN AND CLICK LOOKUP<br>SHOWS ALL DNS RECORDS, WHOIS DATA<br>SPF, DMARC AND EMAIL SECURITY</div></div></div></div>
+      <div class="tab-panel" id="whois-panel-whois"><div id="whois-whois-c"><div class="placeholder"><div class="placeholder-icon">📋</div><div class="placeholder-text">WHOIS / RDAP DATA APPEARS HERE</div></div></div></div>
+      <div class="tab-panel" id="whois-panel-security"><div id="whois-sec-c"><div class="placeholder"><div class="placeholder-icon">📧</div><div class="placeholder-text">SPF, DMARC AND DKIM INFO APPEARS HERE</div></div></div></div>
+      <div class="tab-panel" id="whois-panel-log"><div class="log-stream" id="whois-log"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ MODULE: TECH SCAN ═══════════════════ -->
+<div class="module" id="mod-tech">
+  <aside class="sidebar">
+    <div class="panel"><div class="panel-label">TARGET</div>
+      <div class="field"><label>URL</label><input type="text" id="tech-target" placeholder="https://example.com"></div>
+      <div class="field"><label>WORKER URL</label><input type="text" id="tech-worker" placeholder="https://your-worker.workers.dev"></div>
+    </div>
+    <button class="scan-btn" id="tech-btn" onclick="startTechScan()">▶ FINGERPRINT</button>
+    <div class="panel"><div class="panel-label">STATS</div>
+      <div class="stats-grid">
+        <div class="stat-box"><div class="stat-num" id="ts-total" style="color:var(--accent)">0</div><div class="stat-label">DETECTED</div></div>
+        <div class="stat-box"><div class="stat-num" id="ts-cats" style="color:var(--info)">0</div><div class="stat-label">CATEGORIES</div></div>
+        <div class="stat-box"><div class="stat-num" id="ts-medium" style="color:var(--warn)">0</div><div class="stat-label">NOTABLE</div></div>
+        <div class="stat-box"><div class="stat-num" id="ts-score" style="color:var(--muted)">—</div><div class="stat-label">HTTP STATUS</div></div>
+      </div>
+    </div>
+  </aside>
+  <div class="main">
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('tech','results')" id="tech-tab-results">TECHNOLOGIES <span class="badge" id="tech-b-results">0</span></div>
+      <div class="tab" onclick="switchTab('tech','versions')" id="tech-tab-versions">VERSION INFO</div>
+      <div class="tab" onclick="switchTab('tech','log')" id="tech-tab-log">LOG</div>
+    </div>
+    <div class="results-area">
+      <div class="tab-panel active" id="tech-panel-results"><div id="tech-results-c"><div class="placeholder"><div class="placeholder-icon">🖥</div><div class="placeholder-text">ENTER URL AND CLICK FINGERPRINT<br>DETECTS CMS, FRAMEWORKS, LIBRARIES<br>SERVERS, CDNs AND SECURITY TOOLS</div></div></div></div>
+      <div class="tab-panel" id="tech-panel-versions"><div id="tech-versions-c"><div class="placeholder"><div class="placeholder-icon">🏷</div><div class="placeholder-text">VERSION INFORMATION FROM HEADERS</div></div></div></div>
+      <div class="tab-panel" id="tech-panel-log"><div class="log-stream" id="tech-log"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ MODULE: S3 BUCKETS ═══════════════════ -->
+<div class="module" id="mod-s3">
+  <aside class="sidebar">
+    <div class="panel"><div class="panel-label">TARGET</div>
+      <div class="field"><label>COMPANY / DOMAIN NAME</label><input type="text" id="s3-target" placeholder="acmecorp or acmecorp.com"><div class="fn">The tool will check common bucket name variations</div></div>
+      <div class="field"><label>WORKER URL</label><input type="text" id="s3-worker" placeholder="https://your-worker.workers.dev"></div>
+    </div>
+    <div class="panel"><div class="panel-label">ADDITIONAL NAMES</div>
+      <div class="field"><label>EXTRA NAMES TO CHECK (comma separated)</label><input type="text" id="s3-extra" placeholder="acme, acme-corp, acmeinc"><div class="fn">Will also check common suffixes like -backup, -dev, -prod etc.</div></div>
+    </div>
+    <button class="scan-btn" id="s3-btn" onclick="startS3Scan()">▶ CHECK BUCKETS</button>
+    <div class="panel"><div class="panel-label">STATS</div>
+      <div class="stats-grid">
+        <div class="stat-box"><div class="stat-num" id="s3-public" style="color:var(--danger)">0</div><div class="stat-label">PUBLIC</div></div>
+        <div class="stat-box"><div class="stat-num" id="s3-exists" style="color:var(--warn)">0</div><div class="stat-label">EXISTS</div></div>
+        <div class="stat-box"><div class="stat-num" id="s3-checked" style="color:var(--info)">0</div><div class="stat-label">CHECKED</div></div>
+        <div class="stat-box"><div class="stat-num" id="s3-total" style="color:var(--muted)">0</div><div class="stat-label">TOTAL</div></div>
+      </div>
+      <div class="progress-wrap"><div class="progress-bar" id="s3-prog"></div></div>
+      <div class="progress-label" id="s3-progl">Waiting...</div>
+    </div>
+  </aside>
+  <div class="main">
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('s3','results')" id="s3-tab-results">RESULTS <span class="badge" id="s3-b-results">0</span></div>
+      <div class="tab" onclick="switchTab('s3','log')" id="s3-tab-log">LOG</div>
+    </div>
+    <div class="results-area">
+      <div class="disclaimer">⚠ Only check bucket names for organizations you have permission to test. Accessing public buckets without authorization may still violate terms of service.</div>
+      <div class="tab-panel active" id="s3-panel-results">
+        <div class="col-header" id="s3-ch" style="display:none;grid-template-columns:1fr 80px auto"><span>BUCKET NAME</span><span>STATUS</span><span>DETAIL</span></div>
+        <div id="s3-results-c"><div class="placeholder"><div class="placeholder-icon">☁</div><div class="placeholder-text">ENTER COMPANY NAME AND CLICK CHECK<br>FINDS PUBLIC OR EXPOSED AWS S3 BUCKETS<br>CHECKS COMMON NAMING PATTERNS</div></div></div>
+      </div>
+      <div class="tab-panel" id="s3-panel-log"><div class="log-stream" id="s3-log"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ MODULE: REPORT ═══════════════════ -->
+<!-- ═══════════════════ MODULE: GOOGLE DORKS ═══════════════════ -->
+<div class="module" id="mod-dork">
+  <aside class="sidebar">
+    <div class="panel"><div class="panel-label">TARGET</div>
+      <div class="field"><label>TARGET DOMAIN</label><input type="text" id="dork-target" placeholder="example.com"></div>
+      <div class="fn" style="margin-top:.2rem">Enter your domain — all dork queries will be scoped to site:yourdomain.com</div>
+    </div>
+    <div class="panel"><div class="panel-label">CATEGORIES</div>
+      <div class="wl-grid" id="dork-cats">
+        <label class="wl-item active"><input type="checkbox" value="creds" checked>CREDENTIALS</label>
+        <label class="wl-item active"><input type="checkbox" value="docs" checked>DOCUMENTS</label>
+        <label class="wl-item active"><input type="checkbox" value="config" checked>CONFIG FILES</label>
+        <label class="wl-item active"><input type="checkbox" value="db" checked>DATABASES</label>
+        <label class="wl-item active"><input type="checkbox" value="login" checked>LOGIN PANELS</label>
+        <label class="wl-item active"><input type="checkbox" value="camera" checked>CAMERAS/IoT</label>
+        <label class="wl-item active"><input type="checkbox" value="vulns" checked>VULN SOFTWARE</label>
+        <label class="wl-item active"><input type="checkbox" value="email" checked>EMAIL/STAFF</label>
+      </div>
+    </div>
+    <button class="scan-btn" onclick="generateDorks()">▶ GENERATE DORKS</button>
+    <div class="panel"><div class="panel-label">TIPS</div>
+      <div class="fn" style="line-height:1.8">
+        • Click <span style="color:var(--info)">GOOGLE</span> to open query directly<br>
+        • Click <span style="color:var(--muted)">COPY</span> to copy query<br>
+        • Use only on domains you <strong style="color:var(--warn)">own or are authorized</strong> to test<br>
+        • Results may take time to appear in Google<br>
+        • Some queries may return no results — that is a good sign
+      </div>
+    </div>
+  </aside>
+  <div class="main">
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('dork','results')" id="dork-tab-results">DORK QUERIES <span class="badge" id="dork-b-results">0</span></div>
+      <div class="tab" onclick="switchTab('dork','all')" id="dork-tab-all">ALL QUERIES <span class="badge" id="dork-b-all">0</span></div>
+      <div class="tab" onclick="switchTab('dork','guide')" id="dork-tab-guide">HOW TO USE</div>
+    </div>
+    <div class="results-area">
+      <div class="disclaimer">⚠ Google dorking is a legitimate reconnaissance technique for authorized security testing. Only run these queries against domains you own or have explicit written permission to test. Unauthorized reconnaissance may violate computer fraud laws.</div>
+      <div class="tab-panel active" id="dork-panel-results">
+        <div id="dork-output">
+          <div class="placeholder"><div class="placeholder-icon">🔎</div><div class="placeholder-text">ENTER YOUR DOMAIN AND CLICK GENERATE DORKS<br>CREATES TARGETED GOOGLE SEARCH QUERIES TO FIND<br>EXPOSED SENSITIVE DATA INDEXED BY GOOGLE</div></div>
+        </div>
+      </div>
+      <div class="tab-panel" id="dork-panel-all">
+        <div id="dork-all-output">
+          <div class="placeholder"><div class="placeholder-icon">📋</div><div class="placeholder-text">ALL GENERATED QUERIES APPEAR HERE AS A FLAT LIST<br>EASY TO COPY AND SHARE WITH YOUR SECURITY TEAM</div></div>
+        </div>
+      </div>
+      <div class="tab-panel" id="dork-panel-guide">
+        <div style="font-family:'Share Tech Mono',monospace;font-size:.7rem;line-height:2;color:var(--text);padding:.5rem">
+          <div style="color:var(--accent);font-size:.8rem;margin-bottom:.75rem;font-family:'Rajdhani',sans-serif;font-weight:700;text-transform:uppercase">HOW GOOGLE DORKING WORKS</div>
+          <div style="color:var(--muted);margin-bottom:1rem">Google indexes publicly accessible web content. If sensitive files are accidentally exposed on a web server, Google may index them and they become searchable. Dorking uses advanced search operators to find this data.</div>
+          <div style="color:var(--accent);margin-bottom:.3rem">COMMON OPERATORS:</div>
+          <div style="color:var(--muted);margin-bottom:.75rem">
+            <span style="color:var(--text)">site:</span> — restrict results to a specific domain<br>
+            <span style="color:var(--text)">filetype:</span> — search for specific file types<br>
+            <span style="color:var(--text)">inurl:</span> — search for keywords in URLs<br>
+            <span style="color:var(--text)">intitle:</span> — search for keywords in page titles<br>
+            <span style="color:var(--text)">intext:</span> — search for keywords in page content<br>
+            <span style="color:var(--text)">ext:</span> — alternative to filetype:<br>
+            <span style="color:var(--text)">"quotes"</span> — exact phrase matching
+          </div>
+          <div style="color:var(--accent);margin-bottom:.3rem">WHAT TO DO IF YOU FIND RESULTS:</div>
+          <div style="color:var(--muted)">
+            1. Document the finding with screenshots<br>
+            2. Remove the exposed file from the web server immediately<br>
+            3. Rotate any credentials or keys that were exposed<br>
+            4. Request Google removal via Search Console<br>
+            5. Check your web server logs to see if the file was accessed<br>
+            6. Review how the file became publicly accessible
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="module" id="mod-report">
+  <aside class="sidebar">
+    <div class="panel"><div class="panel-label">REPORT CONFIG</div>
+      <div class="field"><label>TARGET DOMAIN</label><input type="text" id="rpt-target" placeholder="example.com"></div>
+      <div class="field"><label>PROGRAM NAME</label><input type="text" id="rpt-program" placeholder="HackerOne — Example Program"></div>
+      <div class="field"><label>RESEARCHER NAME</label><input type="text" id="rpt-researcher" placeholder="welchsec"></div>
+    </div>
+    <div class="panel"><div class="panel-label">INCLUDE FINDINGS FROM</div>
+      <div class="wl-grid">
+        <label class="wl-item active"><input type="checkbox" id="rpt-dir" checked>DIR SCAN</label>
+        <label class="wl-item active"><input type="checkbox" id="rpt-port" checked>PORT SCAN</label>
+        <label class="wl-item active"><input type="checkbox" id="rpt-hdr" checked>HEADERS</label>
+        <label class="wl-item active"><input type="checkbox" id="rpt-js" checked>JS FINDINGS</label>
+        <label class="wl-item active"><input type="checkbox" id="rpt-sub" checked>SUBDOMAINS</label>
+        <label class="wl-item active"><input type="checkbox" id="rpt-s3" checked>S3 BUCKETS</label>
+        <label class="wl-item active"><input type="checkbox" id="rpt-tech" checked>TECH STACK</label>
+      </div>
+    </div>
+    <button class="scan-btn" onclick="generateReport()">▶ GENERATE REPORT</button>
+    <button class="scan-btn" style="border-color:var(--info);color:var(--info);margin-top:.5rem" onclick="exportReport()">⬇ EXPORT .TXT</button>
+  </aside>
+  <div class="main">
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('report','view')" id="report-tab-view">REPORT VIEW</div>
+      <div class="tab" onclick="switchTab('report','stats')" id="report-tab-stats">STATISTICS</div>
+    </div>
+    <div class="results-area">
+      <div class="tab-panel active" id="report-panel-view"><div id="report-view-c"><div class="placeholder"><div class="placeholder-icon">📄</div><div class="placeholder-text">RUN SCANS ACROSS THE OTHER MODULES<br>THEN CLICK GENERATE REPORT TO COMPILE<br>ALL FINDINGS INTO A BUG BOUNTY REPORT</div></div></div></div>
+      <div class="tab-panel" id="report-panel-stats"><div id="report-stats-c"><div class="placeholder"><div class="placeholder-icon">📊</div><div class="placeholder-text">STATISTICS SUMMARY APPEARS HERE</div></div></div></div>
+    </div>
+  </div>
+</div>
+
+
 </body>
 </html>
